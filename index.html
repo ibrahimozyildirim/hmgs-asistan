@@ -90,7 +90,7 @@
         ];
 
         // GÖRSEL DÜZENLEYİCİ BİLEŞENİ
-        function ImageEditor({ src, onSave, onCancel }) {
+        function ImageEditor({ src, onSave, onCancel, title }) {
             const imageRef = useRef(null);
             const cropperRef = useRef(null);
             const [isReady, setIsReady] = useState(false);
@@ -164,7 +164,7 @@
                 <div className="fixed inset-0 z-[60] bg-black flex flex-col animate-fade-in">
                     <div className="flex justify-between items-center p-4 bg-black/80 text-white backdrop-blur-sm z-10 border-b border-white/10">
                         <button onClick={onCancel} className="text-sm font-medium hover:opacity-70 px-2 py-1">İptal</button>
-                        <span className="font-bold">Fotoğrafı Düzenle</span>
+                        <span className="font-bold">{title || "Fotoğrafı Düzenle"}</span>
                         <button onClick={handleSave} className="text-indigo-400 font-bold hover:text-indigo-300 flex items-center gap-1 px-2 py-1">
                             <Icons.Check size={20} /> Kaydet
                         </button>
@@ -301,10 +301,24 @@
                 reader.readAsDataURL(file);
             };
 
+            // Editörden Kaydetme İşlemi (Güncellendi)
             const handleEditorSave = (croppedImage) => {
                 const newImages = [...inputImages];
                 newImages[editingIndex] = croppedImage;
                 setInputImages(newImages);
+                
+                // AKILLI KIRPMA AKIŞI:
+                // Eğer kullanıcı 1. slotu (Soru) düzenliyorsa, aynı fotoğraftan cevap almak isteyip istemediğini sor.
+                if (editingIndex === 0) {
+                    if (window.confirm("📸 Bu fotoğrafta cevap/çözüm de var mı?\n\n'Tamam' derseniz aynı fotoğraf üzerinden cevabı da kırpabilirsiniz.")) {
+                        setEditingIndex(1); // Hedefi cevap slotuna çevir
+                        // Not: editingImage (kaynak fotoğraf) değişmediği için editör kapanmaz, 
+                        // ama key={editingIndex} sayesinde editör yeniden başlar ve kullanıcı yeni bir seçim yapabilir.
+                        return; 
+                    }
+                }
+
+                // İşlem bitti, editörü kapat
                 setEditingImage(null);
                 setEditingIndex(null);
             };
@@ -414,7 +428,9 @@
                 {viewImage && <ImageViewer src={viewImage} onClose={() => setViewImage(null)} />}
                 {editingImage && (
                     <ImageEditor 
+                        key={editingIndex} // ÖNEMLİ: Index değişince editörü sıfırla (Soru -> Cevap geçişi için)
                         src={editingImage} 
+                        title={editingIndex === 0 ? "1. Adım: Soruyu Kırp" : "2. Adım: Cevabı Kırp"}
                         onSave={handleEditorSave} 
                         onCancel={handleEditorCancel} 
                     />
