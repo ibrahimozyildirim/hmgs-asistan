@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>HMGS Asistan</title>
     
-    <!-- PWA Manifest (Uygulama Kimliği) -->
     <link rel="manifest" href="data:application/json;base64,eyJuYW1lIjoiSE1HUyBBc2lzdGFuIiwic2hvcnRfbmFtZSI6IkhNR1MiLCJzdGFydF91cmwiOiIuLyIsImRpc3BsYXkiOiJzdGFuZGFsb25lIiwiYmFja2dyb3VuZF9jb2xvciI6IiMxZTI5M2IiLCJ0aGVtZV9jb2xvciI6IiM0ZjQ2ZTUiLCJpY29ucyI6W3sic3JjIjoiaHR0cHM6Ly91cGxvYWQud2lraW1lZGlhLm9yZy93aWtpcGVkaWEvY29tbW9ucy90aHVtYi81LzU1L1NjYWxlX29mX2p1c3RpY2VfMi5zdmcvMTIwMHB4LVNjYWxlX29mX2p1c3RpY2VfMi5zdmcucG5nIiwic2l6ZXMiOiIxOTJ4MTkyIiwidHlwZSI6ImltYWdlL3BuZyJ9XX0=">
 
     <!-- Tailwind CSS -->
@@ -22,7 +21,7 @@
     <!-- Babel -->
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
-    <!-- Firebase (Bulut Senkronizasyonu İçin) -->
+    <!-- Firebase -->
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
 
@@ -44,9 +43,7 @@
 
         // --- İKONLAR ---
         const Icon = ({ path, size = 24, className = "" }) => (
-            <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
-                {path}
-            </svg>
+            <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>{path}</svg>
         );
 
         const Icons = {
@@ -72,6 +69,7 @@
             Settings: (props) => <Icon {...props} path={<><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.1a2 2 0 0 1-1-1.74v-.47a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></>} />,
             Cloud: (props) => <Icon {...props} path={<path d="M17.5 19c0-1.7-1.3-3-3-3h-1.1c-.1-2.9-2.4-5.1-5.3-5.1-2.1 0-4 1.2-4.9 3.1-.2 0-.4 0-.6 0-2.5 0-4.5 2-4.5 4.5S2.5 23 5 23h12.5c2.5 0 4.5-2 4.5-4.5z"/>} />,
             CloudOff: (props) => <Icon {...props} path={<><path d="M22.61 16.95A5 5 0 0 0 18 10h-1.26a8 8 0 0 0-7.05-6M5 5a8 8 0 0 0 4 7h1.8a5 5 0 0 0 4 10h2.17M2 2l20 20"/></>} />,
+            HelpCircle: (props) => <Icon {...props} path={<><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></>} />,
         };
 
         const SUBJECTS = [
@@ -80,59 +78,52 @@
             "İcra ve İflas Hukuku", "İş Hukuku", "Vergi Hukuku", "Türk Hukuk Tarihi", "Genel Hukuk Bilgisi"
         ];
 
-        // --- GÖRSEL DÜZENLEYİCİ BİLEŞENİ ---
+        // --- GÖRSEL DÜZENLEYİCİ ---
         function ImageEditor({ src, onSave, onCancel, title }) {
             const imageRef = useRef(null);
             const cropperRef = useRef(null);
             const [isReady, setIsReady] = useState(false);
 
+            useEffect(() => {
+                return () => { if (cropperRef.current) cropperRef.current.destroy(); };
+            }, []);
+
             const handleImageLoad = () => {
                 const imageElement = imageRef.current;
                 if (imageElement && window.Cropper) {
                     if (cropperRef.current) cropperRef.current.destroy();
-                    
                     const cropper = new window.Cropper(imageElement, {
-                        viewMode: 1, 
-                        dragMode: 'move', 
-                        autoCropArea: 0.9, 
-                        restore: false,
-                        guides: true,
-                        center: true,
-                        highlight: false,
-                        cropBoxMovable: true,
-                        cropBoxResizable: true,
-                        toggleDragModeOnDblclick: false,
-                        background: false,
-                        minContainerWidth: 300,
-                        minContainerHeight: 300,
+                        viewMode: 1, dragMode: 'move', autoCropArea: 0.9, restore: false,
+                        guides: true, center: true, highlight: false, cropBoxMovable: true,
+                        cropBoxResizable: true, toggleDragModeOnDblclick: false, background: false,
+                        minContainerWidth: 300, minContainerHeight: 300,
                     });
                     cropperRef.current = cropper;
                     setIsReady(true);
                 }
             };
 
-            useEffect(() => {
-                return () => { if (cropperRef.current) cropperRef.current.destroy(); };
-            }, []);
-
             const handleRotateRight = () => cropperRef.current?.rotate(90);
             const handleRotateLeft = () => cropperRef.current?.rotate(-90);
             const handleReset = () => cropperRef.current?.reset();
-
+            
             const handleSave = () => {
                 if (cropperRef.current) {
-                    const canvas = cropperRef.current.getCroppedCanvas({
-                        maxWidth: 1024, 
-                        maxHeight: 1024,
-                        imageSmoothingEnabled: true,
-                        imageSmoothingQuality: 'high',
-                        fillColor: '#fff',
-                    });
-                    
-                    if (canvas) {
-                        const croppedImage = canvas.toDataURL('image/jpeg', 0.75); // Boyut için sıkıştırma oranı 0.75
-                        onSave(croppedImage);
+                    let quality = 0.9;
+                    let width = 2560; 
+                    let canvas = cropperRef.current.getCroppedCanvas({ maxWidth: width, maxHeight: width, fillColor: '#fff' });
+                    let dataUrl = canvas.toDataURL('image/jpeg', quality);
+
+                    while (dataUrl.length > 800000 && quality > 0.6) {
+                        quality -= 0.1;
+                        dataUrl = canvas.toDataURL('image/jpeg', quality);
                     }
+                    while (dataUrl.length > 800000 && width > 1200) {
+                        width -= 400;
+                        canvas = cropperRef.current.getCroppedCanvas({ maxWidth: width, maxHeight: width, fillColor: '#fff' });
+                        dataUrl = canvas.toDataURL('image/jpeg', quality);
+                    }
+                    onSave(dataUrl);
                 }
             };
 
@@ -141,159 +132,80 @@
                     <div className="flex justify-between items-center p-4 bg-black/80 text-white backdrop-blur-sm z-10 border-b border-white/10">
                         <button onClick={onCancel} className="text-sm font-medium hover:opacity-70 px-2 py-1">İptal</button>
                         <span className="font-bold">{title || "Fotoğrafı Düzenle"}</span>
-                        <button onClick={handleSave} className="text-indigo-400 font-bold hover:text-indigo-300 flex items-center gap-1 px-2 py-1">
-                            <Icons.Check size={20} /> Kaydet
-                        </button>
+                        <button onClick={handleSave} className="text-indigo-400 font-bold hover:text-indigo-300 flex items-center gap-1 px-2 py-1"><Icons.Check size={20} /> Kaydet</button>
                     </div>
-
                     <div className="flex-1 overflow-hidden bg-[#1a1a1a] relative flex items-center justify-center">
-                         <img 
-                            ref={imageRef} 
-                            src={src} 
-                            alt="Edit" 
-                            onLoad={handleImageLoad}
-                            style={{ maxWidth: '100%', maxHeight: '100%', display: 'block', opacity: isReady ? 1 : 0 }} 
-                         />
+                         <img ref={imageRef} src={src} alt="Edit" onLoad={handleImageLoad} style={{ maxWidth: '100%', maxHeight: '100%', display: 'block', opacity: isReady ? 1 : 0 }} />
                          {!isReady && <div className="absolute text-white animate-pulse">Yükleniyor...</div>}
                     </div>
-
                     <div className="bg-black/80 p-6 flex justify-around items-center text-white pb-8 border-t border-white/10">
-                        <button onClick={handleRotateLeft} className="flex flex-col items-center gap-2 opacity-80 hover:opacity-100 hover:text-indigo-400 transition-colors">
-                            <div className="p-3 bg-white/10 rounded-full"><Icons.RotateCcw size={24} /></div>
-                            <span className="text-xs font-medium">Sola</span>
-                        </button>
-                        
-                        <button onClick={handleReset} className="flex flex-col items-center gap-2 opacity-80 hover:opacity-100 hover:text-red-400 transition-colors">
-                            <div className="p-3 bg-white/10 rounded-full"><Icons.X size={24} /></div>
-                            <span className="text-xs font-medium">Sıfırla</span>
-                        </button>
-
-                        <button onClick={handleRotateRight} className="flex flex-col items-center gap-2 opacity-80 hover:opacity-100 hover:text-indigo-400 transition-colors">
-                            <div className="p-3 bg-white/10 rounded-full"><Icons.RotateCw size={24} /></div>
-                            <span className="text-xs font-medium">Sağa</span>
-                        </button>
+                        <button onClick={handleRotateLeft} className="flex flex-col items-center gap-2 hover:text-indigo-400"><div className="p-3 bg-white/10 rounded-full"><Icons.RotateCcw size={24} /></div><span className="text-xs">Sola</span></button>
+                        <button onClick={handleReset} className="flex flex-col items-center gap-2 hover:text-red-400"><div className="p-3 bg-white/10 rounded-full"><Icons.X size={24} /></div><span className="text-xs">Sıfırla</span></button>
+                        <button onClick={handleRotateRight} className="flex flex-col items-center gap-2 hover:text-indigo-400"><div className="p-3 bg-white/10 rounded-full"><Icons.RotateCw size={24} /></div><span className="text-xs">Sağa</span></button>
                     </div>
                 </div>
             );
         }
 
-        // --- TAM EKRAN GÖRSEL GÖRÜNTÜLEYİCİ ---
+        // --- GALERİ GÖRÜNTÜLEYİCİ ---
         function ImageViewer({ images, initialIndex, onClose }) {
             const [currentIndex, setCurrentIndex] = useState(initialIndex);
             const [scale, setScale] = useState(1);
-            
             const touchStartX = useRef(0);
             const touchEndX = useRef(0);
             
             const handleZoomIn = (e) => { e.stopPropagation(); setScale(prev => Math.min(prev + 0.5, 4)); };
             const handleZoomOut = (e) => { e.stopPropagation(); setScale(prev => Math.max(prev - 0.5, 1)); };
-
-            const handleNext = (e) => {
-                if(e) e.stopPropagation();
-                if (currentIndex < images.length - 1) { setCurrentIndex(currentIndex + 1); setScale(1); }
-            };
-
-            const handlePrev = (e) => {
-                if(e) e.stopPropagation();
-                if (currentIndex > 0) { setCurrentIndex(currentIndex - 1); setScale(1); }
-            };
-
+            const handleNext = (e) => { if(e) e.stopPropagation(); if (currentIndex < images.length - 1) { setCurrentIndex(currentIndex + 1); setScale(1); } };
+            const handlePrev = (e) => { if(e) e.stopPropagation(); if (currentIndex > 0) { setCurrentIndex(currentIndex - 1); setScale(1); } };
             const handleTouchStart = (e) => { touchStartX.current = e.changedTouches[0].screenX; };
-            const handleTouchEnd = (e) => {
-                touchEndX.current = e.changedTouches[0].screenX;
-                if (scale > 1) return;
-                const diff = touchStartX.current - touchEndX.current;
-                if (diff > 50) handleNext(); else if (diff < -50) handlePrev();
-            };
+            const handleTouchEnd = (e) => { touchEndX.current = e.changedTouches[0].screenX; if (scale > 1) return; if(touchStartX.current - touchEndX.current > 50) handleNext(); else if(touchStartX.current - touchEndX.current < -50) handlePrev(); };
 
             return (
-                <div 
-                    className="fixed inset-0 z-50 bg-black/95 flex flex-col items-center justify-center animate-fade-in"
-                    onClick={onClose}
-                    onTouchStart={handleTouchStart}
-                    onTouchEnd={handleTouchEnd}
-                >
+                <div className="fixed inset-0 z-50 bg-black/95 flex flex-col items-center justify-center animate-fade-in" onClick={onClose} onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
                     <div className="absolute top-4 right-4 z-50 flex gap-4">
-                        <button onClick={handleZoomOut} className="p-2 bg-white/10 rounded-full text-white hover:bg-white/20"><Icons.ZoomOut size={24} /></button>
-                        <button onClick={handleZoomIn} className="p-2 bg-white/10 rounded-full text-white hover:bg-white/20"><Icons.ZoomIn size={24} /></button>
-                        <button onClick={onClose} className="p-2 bg-red-500/80 rounded-full text-white hover:bg-red-600"><Icons.X size={24} /></button>
+                        <button onClick={handleZoomOut} className="p-2 bg-white/10 rounded-full text-white"><Icons.ZoomOut size={24} /></button>
+                        <button onClick={handleZoomIn} className="p-2 bg-white/10 rounded-full text-white"><Icons.ZoomIn size={24} /></button>
+                        <button onClick={onClose} className="p-2 bg-red-500/80 rounded-full text-white"><Icons.X size={24} /></button>
                     </div>
-
-                    {currentIndex > 0 && (
-                        <button onClick={handlePrev} className="absolute left-4 top-1/2 -translate-y-1/2 p-3 bg-white/10 rounded-full text-white hover:bg-white/30 z-50 hidden md:block">
-                            <Icons.ChevronLeft size={32} />
-                        </button>
-                    )}
-                    {currentIndex < images.length - 1 && (
-                        <button onClick={handleNext} className="absolute right-4 top-1/2 -translate-y-1/2 p-3 bg-white/10 rounded-full text-white hover:bg-white/30 z-50 hidden md:block">
-                            <Icons.ChevronRight size={32} />
-                        </button>
-                    )}
-
+                    {currentIndex > 0 && <button onClick={handlePrev} className="absolute left-4 top-1/2 -translate-y-1/2 p-3 bg-white/10 rounded-full text-white hidden md:block"><Icons.ChevronLeft size={32} /></button>}
+                    {currentIndex < images.length - 1 && <button onClick={handleNext} className="absolute right-4 top-1/2 -translate-y-1/2 p-3 bg-white/10 rounded-full text-white hidden md:block"><Icons.ChevronRight size={32} /></button>}
                     <div className="w-full h-full overflow-hidden flex items-center justify-center p-2" onClick={(e) => e.stopPropagation()}>
-                        <img 
-                            src={images[currentIndex]} 
-                            alt={`Slide ${currentIndex}`} 
-                            className="zoom-image max-w-full max-h-full object-contain transition-transform duration-200"
-                            style={{ transform: `scale(${scale})`, transformOrigin: 'center center' }}
-                        />
+                        <img src={images[currentIndex]} alt="Slide" className="zoom-image max-w-full max-h-full object-contain transition-transform duration-200" style={{ transform: `scale(${scale})` }} />
                     </div>
-
-                    <div className="absolute bottom-6 left-0 right-0 flex justify-center gap-2">
-                        {images.map((_, idx) => (
-                            <div key={idx} className={`h-2 w-2 rounded-full transition-all ${idx === currentIndex ? 'bg-white w-4' : 'bg-white/30'}`} />
-                        ))}
-                    </div>
+                    <div className="absolute bottom-6 flex gap-2">{images.map((_, idx) => <div key={idx} className={`h-2 w-2 rounded-full transition-all ${idx === currentIndex ? 'bg-white w-4' : 'bg-white/30'}`} />)}</div>
                 </div>
             );
         }
 
         // --- AYARLAR MODALI ---
-        function SettingsModal({ isOpen, onClose, firebaseConfig, setFirebaseConfig, onConnect }) {
+        function SettingsModal({ isOpen, onClose, firebaseConfig, onSaveConfig }) {
             const [configInput, setConfigInput] = useState(firebaseConfig ? JSON.stringify(firebaseConfig, null, 2) : '');
+            const [showHelp, setShowHelp] = useState(false);
 
             if (!isOpen) return null;
 
             return (
                 <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4 animate-fade-in" onClick={onClose}>
-                    <div className="bg-white dark:bg-slate-800 rounded-xl p-6 w-full max-w-md shadow-2xl" onClick={e => e.stopPropagation()}>
+                    <div className="bg-white dark:bg-slate-800 rounded-xl p-6 w-full max-w-md shadow-2xl max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
                         <div className="flex justify-between items-center mb-4">
-                            <h2 className="text-xl font-bold flex items-center gap-2">
-                                <Icons.Settings size={24} /> Ayarlar
-                            </h2>
+                            <h2 className="text-xl font-bold flex items-center gap-2"><Icons.Settings size={24} /> Ayarlar</h2>
                             <button onClick={onClose}><Icons.X size={24} /></button>
                         </div>
-
                         <div className="space-y-4">
-                            <div>
-                                <h3 className="font-semibold mb-2 flex items-center gap-2">
-                                    <Icons.Cloud size={20} className="text-blue-500" /> Bulut Senkronizasyonu
-                                </h3>
-                                <p className="text-sm opacity-70 mb-2">
-                                    PC ve Mobil cihazlarınızın birbirini görmesi için Firebase Config bilginizi buraya yapıştırın.
-                                </p>
-                                <textarea 
-                                    className="w-full h-40 p-3 text-xs font-mono border rounded bg-gray-50 dark:bg-slate-900 dark:border-slate-700"
-                                    placeholder='{ "apiKey": "...", "authDomain": "...", ... }'
-                                    value={configInput}
-                                    onChange={(e) => setConfigInput(e.target.value)}
-                                />
-                            </div>
-                            <button 
-                                onClick={() => onConnect(configInput)}
-                                className="w-full py-3 bg-indigo-600 text-white rounded-lg font-bold hover:bg-indigo-700"
-                            >
-                                Bağlan ve Kaydet
-                            </button>
-                            <p className="text-[10px] text-center opacity-50 mt-2">
-                                * Verileriniz sadece kendi Firebase hesabınızda saklanır. Güvenlidir.
-                            </p>
+                            <h3 className="font-semibold mb-2 flex items-center gap-2"><Icons.Cloud size={20} className="text-blue-500" /> Bulut Bağlantısı</h3>
+                            <p className="text-sm opacity-70 mb-2">Cihazlarını eşitlemek için Firebase kodunu yapıştır.</p>
+                            <button onClick={() => setShowHelp(!showHelp)} className="flex items-center gap-1 text-indigo-500 text-xs font-bold hover:underline mb-3"><Icons.HelpCircle size={14} /> {showHelp ? "Gizle" : "Nasıl Alınır?"}</button>
+                            {showHelp && <div className="bg-indigo-50 dark:bg-slate-700/50 p-4 rounded-lg text-xs space-y-2 border border-indigo-100 dark:border-slate-600"><p>1. console.firebase.google.com -> Projenize girin.</p><p>2. Ayarlar (Dişli Çark) -> Project Settings.</p><p>3. Aşağıda "Your apps" kısmındaki <code>const firebaseConfig</code> kodunu kopyalayın.</p><p>4. <strong>ÖNEMLİ:</strong> Veritabanı "Rules" kısmında <code>allow read, write: if true;</code> olduğundan emin olun.</p></div>}
+                            <textarea className="w-full h-32 p-3 text-xs font-mono border rounded bg-gray-50 dark:bg-slate-900 dark:border-slate-700 outline-none" placeholder='{ "apiKey": "...", ... }' value={configInput} onChange={(e) => setConfigInput(e.target.value)} />
+                            <button onClick={() => onSaveConfig(configInput)} className="w-full py-3 bg-indigo-600 text-white rounded-lg font-bold hover:bg-indigo-700">Kaydet ve Bağlan</button>
                         </div>
                     </div>
                 </div>
             );
         }
 
+        // --- ANA UYGULAMA ---
         function App() {
             const [activeTab, setActiveTab] = useState('home'); 
             const [selectedSubject, setSelectedSubject] = useState(null);
@@ -303,12 +215,10 @@
             const [loading, setLoading] = useState(false);
             const [processingText, setProcessingText] = useState('');
             
-            // Firebase State
             const [firebaseConfig, setFirebaseConfig] = useState(null);
             const [isCloudConnected, setIsCloudConnected] = useState(false);
             const [showSettings, setShowSettings] = useState(false);
             
-            // Form States
             const [inputImages, setInputImages] = useState([null, null]); 
             const [inputText, setInputText] = useState('');
             const [inputAnswer, setInputAnswer] = useState(''); 
@@ -316,488 +226,177 @@
             const [viewerData, setViewerData] = useState(null);
             const [editingImage, setEditingImage] = useState(null); 
             const [editingIndex, setEditingIndex] = useState(null); 
-            
             const fileInputRef = useRef(null);
 
-            // Başlangıç: LocalStorage'dan Veri ve Config Çek
             useEffect(() => {
-                // Tema
                 const savedConfig = localStorage.getItem('hmgs_firebase_config');
                 if (savedConfig) {
-                    try {
-                        const config = JSON.parse(savedConfig);
-                        setFirebaseConfig(config);
-                        connectToFirebase(config);
-                    } catch(e) { console.error(e); }
+                    try { const config = JSON.parse(savedConfig); setFirebaseConfig(config); connectToFirebase(config); } catch(e) { console.error(e); }
                 } else {
-                    // Firebase yoksa yerel veriyi çek
-                    loadLocalData();
+                    const savedLocal = localStorage.getItem('hmgs_items');
+                    if(savedLocal) setItems(JSON.parse(savedLocal));
                 }
             }, []);
 
-            const loadLocalData = () => {
-                const savedItems = localStorage.getItem('hmgs_items');
-                if (savedItems) {
-                    try { setItems(JSON.parse(savedItems)); } catch (e) { console.error(e); }
-                }
-            };
-
             const connectToFirebase = (config) => {
                 try {
-                    if (!firebase.apps.length) {
-                        firebase.initializeApp(config);
-                    }
+                    if (!firebase.apps.length) firebase.initializeApp(config);
                     const db = firebase.firestore();
                     setIsCloudConnected(true);
-                    
-                    // Canlı Dinleyici Başlat
                     db.collection('items').orderBy('date', 'desc').onSnapshot((snapshot) => {
                         const cloudItems = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                         setItems(cloudItems);
-                    }, (error) => {
-                        console.error("Firebase Sync Hatası:", error);
-                        alert("Bulut bağlantısı koptu, yerel moda geçiliyor.");
+                    }, (err) => {
+                        console.error("Sync hatası:", err);
                         setIsCloudConnected(false);
-                        loadLocalData();
                     });
-                    
                 } catch (error) {
-                    console.error("Firebase Bağlantı Hatası:", error);
-                    alert("Firebase yapılandırması hatalı.");
                     setIsCloudConnected(false);
                 }
             };
 
-            const handleSettingsSave = (configStr) => {
-                try {
-                    const config = JSON.parse(configStr);
-                    setFirebaseConfig(config);
-                    localStorage.setItem('hmgs_firebase_config', JSON.stringify(config));
-                    connectToFirebase(config);
-                    setShowSettings(false);
-                    alert("Bulut bağlantısı kuruldu! Verileriniz senkronize ediliyor.");
-                } catch (e) {
-                    alert("Geçersiz JSON formatı!");
-                }
+            const handleSaveConfig = (configStr) => {
+                try { const config = JSON.parse(configStr); setFirebaseConfig(config); localStorage.setItem('hmgs_firebase_config', JSON.stringify(config)); connectToFirebase(config); setShowSettings(false); alert("Bağlandı!"); } catch(e) { alert("Config hatalı"); }
             };
 
             const toggleDarkMode = () => setDarkMode(!darkMode);
-
-            const handleFileSelect = (e, index) => {
-                const file = e.target.files[0];
-                if (!file) return;
-                const reader = new FileReader();
-                reader.onload = (event) => {
-                    setEditingImage(event.target.result); 
-                    setEditingIndex(index);
-                    e.target.value = ''; 
-                };
-                reader.readAsDataURL(file);
-            };
-
+            const handleFileSelect = (e, index) => { const file = e.target.files[0]; if (!file) return; const reader = new FileReader(); reader.onload = (event) => { setEditingImage(event.target.result); setEditingIndex(index); e.target.value = ''; }; reader.readAsDataURL(file); };
+            
             const handleEditorSave = (croppedImage) => {
-                const newImages = [...inputImages];
-                newImages[editingIndex] = croppedImage;
-                setInputImages(newImages);
-                if (editingIndex === 0) {
-                    if (window.confirm("📸 Bu fotoğrafta cevap/çözüm de var mı?\n\n'Tamam' derseniz aynı fotoğraf üzerinden cevabı da kırpabilirsiniz.")) {
-                        setEditingIndex(1); return; 
-                    }
-                }
-                setEditingImage(null);
-                setEditingIndex(null);
+                const newImages = [...inputImages]; newImages[editingIndex] = croppedImage; setInputImages(newImages);
+                if (editingIndex === 0 && window.confirm("📸 Bu fotoğrafta cevap/çözüm de var mı?\n\n'Tamam' derseniz aynı fotoğraf üzerinden cevabı da kırpabilirsiniz.")) { setEditingIndex(1); return; }
+                setEditingImage(null); setEditingIndex(null);
             };
 
             const handleSave = async () => {
-                if (!selectedSubject) { alert("Lütfen bir ders seçin."); return; }
+                if (!selectedSubject) { alert("Ders seçin."); return; }
                 if (!inputText && !inputImages[0] && !inputImages[1]) { alert("İçerik giriniz."); return; }
-
-                const newItem = {
-                    id: Date.now(), // Local için ID, Firebase için aşağıda eziyoruz ama kalsın
-                    subject: selectedSubject,
-                    type: selectedType,
-                    text: inputText,
-                    answer: inputAnswer,
-                    images: inputImages.filter(img => img !== null), 
-                    date: new Date().toLocaleDateString('tr-TR')
-                };
-
-                setLoading(true);
-                setProcessingText('Kaydediliyor...');
-
+                setLoading(true); setProcessingText('Kaydediliyor...');
+                
+                const newItem = { subject: selectedSubject, type: selectedType, text: inputText, answer: inputAnswer, images: inputImages.filter(img => img !== null), date: new Date().toLocaleDateString('tr-TR') };
+                
                 try {
                     if (isCloudConnected) {
-                        // Firebase'e Kaydet
-                        const db = firebase.firestore();
-                        await db.collection('items').add(newItem);
+                        await firebase.firestore().collection('items').add(newItem);
                     } else {
-                        // Yerel Kaydet
-                        const updatedItems = [newItem, ...items];
-                        setItems(updatedItems);
-                        localStorage.setItem('hmgs_items', JSON.stringify(updatedItems));
+                        const updated = [newItem, ...items]; setItems(updated); localStorage.setItem('hmgs_items', JSON.stringify(updated));
                     }
-                    
-                    setInputText('');
-                    setInputAnswer('');
-                    setInputImages([null, null]);
-                    setActiveTab('home');
-                } catch (error) {
-                    console.error("Kayıt hatası:", error);
-                    alert("Kaydedilemedi: " + error.message);
-                } finally {
-                    setLoading(false);
-                }
+                    setInputText(''); setInputAnswer(''); setInputImages([null, null]); setActiveTab('home');
+                } catch (error) { alert("Hata: " + error.message); } finally { setLoading(false); }
             };
 
             const handleDelete = async (id) => {
-                if(!window.confirm("Silmek istediğinize emin misiniz?")) return;
-
-                if (isCloudConnected) {
-                    try {
+                if(!window.confirm("Bu kaydı silmek istediğinize emin misiniz?")) return;
+                try {
+                    if (isCloudConnected) {
                         await firebase.firestore().collection('items').doc(id).delete();
-                    } catch (err) {
-                        alert("Silinemedi: " + err.message);
+                    } else {
+                        const filtered = items.filter(item => item.id !== id);
+                        setItems(filtered);
+                        localStorage.setItem('hmgs_items', JSON.stringify(filtered));
                     }
-                } else {
-                    const filtered = items.filter(item => item.id !== id);
-                    setItems(filtered);
-                    localStorage.setItem('hmgs_items', JSON.stringify(filtered));
+                } catch (err) {
+                    alert("Silinemedi! Hata: " + err.message + "\n\nİpucu: Firebase Konsolunda 'Rules' kısmının herkese açık (public) olduğundan emin olun.");
                 }
             };
 
-            const getFilteredItems = (subject, type) => {
-                return items.filter(item => item.subject === subject && item.type === type);
-            };
+            const getFilteredItems = (subject, type) => items.filter(item => item.subject === subject && item.type === type);
 
-            if (loading) {
-                return (
-                    <div className={`min-h-screen flex flex-col items-center justify-center p-6 ${darkMode ? 'bg-slate-900 text-white' : 'bg-gray-100 text-gray-900'}`}>
-                        <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-indigo-500 mb-4"></div>
-                        <p className="text-center animate-pulse">{processingText}</p>
-                    </div>
-                );
-            }
+            if (loading) return <div className={`min-h-screen flex flex-col items-center justify-center ${darkMode?'bg-slate-900 text-white':'bg-gray-100'}`}><div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500 mb-4"></div>{processingText}</div>;
 
             return (
                 <div className={`min-h-screen transition-colors duration-300 ${darkMode ? 'bg-slate-900 text-slate-100' : 'bg-gray-50 text-gray-900'} font-sans pb-24`}>
-                
-                {viewerData && <ImageViewer images={viewerData.images} initialIndex={viewerData.index} onClose={() => setViewerData(null)} />}
-                {editingImage && <ImageEditor key={editingIndex} src={editingImage} title={editingIndex === 0 ? "1. Adım: Soruyu Kırp" : "2. Adım: Cevabı Kırp"} onSave={handleEditorSave} onCancel={() => setEditingImage(null)} />}
-                <SettingsModal isOpen={showSettings} onClose={() => setShowSettings(false)} firebaseConfig={firebaseConfig} onConnect={handleSettingsSave} />
+                    {viewerData && <ImageViewer images={viewerData.images} initialIndex={viewerData.index} onClose={() => setViewerData(null)} />}
+                    {editingImage && <ImageEditor key={editingIndex} src={editingImage} title={editingIndex === 0 ? "1. Adım: Soruyu Kırp" : "2. Adım: Cevabı Kırp"} onSave={handleEditorSave} onCancel={() => setEditingImage(null)} />}
+                    <SettingsModal isOpen={showSettings} onClose={() => setShowSettings(false)} firebaseConfig={firebaseConfig} onSaveConfig={handleSaveConfig} />
 
-                {/* Header */}
-                <div className={`p-4 shadow-md sticky top-0 z-40 flex justify-between items-center ${darkMode ? 'bg-slate-800' : 'bg-white'}`}>
-                    <div className="flex items-center gap-2">
-                        {activeTab !== 'home' && (
-                            <button onClick={() => setActiveTab('home')} className="p-1 rounded-full hover:bg-gray-700/20">
-                                <Icons.ArrowLeft size={24} />
-                            </button>
-                        )}
-                        <h1 className="text-xl font-bold bg-gradient-to-r from-indigo-500 to-purple-500 bg-clip-text text-transparent">
-                            HMGS Asistan
-                        </h1>
-                        {isCloudConnected ? 
-                            <span className="text-[10px] bg-green-500/20 text-green-500 px-2 py-1 rounded-full animate-pulse">Bulut Aktif</span> : 
-                            <span className="text-[10px] bg-gray-500/20 text-gray-500 px-2 py-1 rounded-full">Yerel Mod</span>
-                        }
-                    </div>
-                    <div className="flex gap-2">
-                        <button onClick={() => setShowSettings(true)} className={`p-2 rounded-full ${darkMode ? 'bg-slate-700' : 'bg-gray-200'}`}>
-                            <Icons.Settings size={20} />
-                        </button>
-                        <button onClick={toggleDarkMode} className={`p-2 rounded-full ${darkMode ? 'bg-slate-700' : 'bg-gray-200'}`}>
-                            {darkMode ? <Icons.Sun size={20} /> : <Icons.Moon size={20} />}
-                        </button>
-                    </div>
-                </div>
-
-                {/* Main Content */}
-                <div className="p-4 max-w-md mx-auto">
-                    
-                    {/* HOME SCREEN */}
-                    {activeTab === 'home' && (
-                    <div className="space-y-4">
-                        <div className={`p-6 rounded-2xl bg-gradient-to-br from-indigo-600 to-purple-700 text-white mb-6 shadow-lg`}>
-                        <h2 className="text-2xl font-bold mb-2">Hoş Geldin!</h2>
-                        <p className="opacity-90">
-                            {isCloudConnected ? "Bulut senkronizasyonu aktif. Tüm cihazların eşit." : "Yerel moddasın. Senkronizasyon için ayarlardan bulutu bağla."}
-                        </p>
-                        <div className="mt-4 flex gap-3">
-                            <div className="text-center">
-                                <span className="block text-2xl font-bold">{items.filter(i => i.type === 'note').length}</span>
-                                <span className="text-xs opacity-75">Not</span>
-                            </div>
-                            <div className="text-center border-l border-white/20 pl-3">
-                                <span className="block text-2xl font-bold">{items.filter(i => i.type === 'question').length}</span>
-                                <span className="text-xs opacity-75">Soru</span>
-                            </div>
+                    <div className={`p-4 shadow-md sticky top-0 z-40 flex justify-between items-center ${darkMode ? 'bg-slate-800' : 'bg-white'}`}>
+                        <div className="flex items-center gap-2">
+                            {activeTab !== 'home' && <button onClick={() => setActiveTab('home')}><Icons.ArrowLeft size={24} /></button>}
+                            <h1 className="text-xl font-bold bg-gradient-to-r from-indigo-500 to-purple-500 bg-clip-text text-transparent">HMGS Asistan</h1>
+                            {isCloudConnected ? <span className="text-[10px] bg-green-500/20 text-green-500 px-2 py-1 rounded-full animate-pulse">Bulut</span> : <span className="text-[10px] bg-gray-500/20 text-gray-500 px-2 py-1 rounded-full">Yerel</span>}
                         </div>
+                        <div className="flex gap-2">
+                            <button onClick={() => setShowSettings(true)} className={`p-2 rounded-full ${darkMode ? 'bg-slate-700' : 'bg-gray-200'}`}><Icons.Settings size={20} /></button>
+                            <button onClick={toggleDarkMode} className={`p-2 rounded-full ${darkMode ? 'bg-slate-700' : 'bg-gray-200'}`}>{darkMode ? <Icons.Sun size={20} /> : <Icons.Moon size={20} />}</button>
                         </div>
+                    </div>
 
-                        <div className="grid grid-cols-2 gap-3">
-                        {SUBJECTS.map(subject => {
-                            const count = items.filter(i => i.subject === subject).length;
-                            return (
-                            <button 
-                                key={subject}
-                                onClick={() => { setSelectedSubject(subject); setActiveTab('list'); }}
-                                className={`p-4 rounded-xl shadow-sm border text-left transition-all active:scale-95 flex flex-col justify-between h-32
-                                ${darkMode ? 'bg-slate-800 border-slate-700 hover:bg-slate-750' : 'bg-white border-gray-200 hover:bg-gray-50'}`}
-                            >
-                                <span className="font-semibold text-sm line-clamp-2">{subject}</span>
-                                <div className="flex justify-between items-end mt-2">
-                                <Icons.BookOpen size={16} className="text-indigo-500" />
-                                <span className="text-xs px-2 py-1 rounded-full bg-indigo-500/10 text-indigo-500 font-bold">{count}</span>
+                    <div className="p-4 max-w-md mx-auto">
+                        {activeTab === 'home' && (
+                            <div className="space-y-4">
+                                <div className={`p-6 rounded-2xl bg-gradient-to-br from-indigo-600 to-purple-700 text-white mb-6 shadow-lg`}>
+                                    <h2 className="text-2xl font-bold mb-2">Hoş Geldin!</h2>
+                                    <p className="opacity-90">{isCloudConnected ? "Bulut senkronizasyonu aktif." : "Yerel moddasın. Ayarlardan bulutu bağla."}</p>
+                                    <div className="mt-4 flex gap-3 text-center">
+                                        <div className="flex-1"><span className="block text-2xl font-bold">{items.filter(i => i.type === 'note').length}</span><span className="text-xs opacity-75">Not</span></div>
+                                        <div className="flex-1 border-l border-white/20"><span className="block text-2xl font-bold">{items.filter(i => i.type === 'question').length}</span><span className="text-xs opacity-75">Soru</span></div>
+                                    </div>
                                 </div>
-                            </button>
-                            );
-                        })}
-                        </div>
-                    </div>
-                    )}
-
-                    {/* LIST SCREEN */}
-                    {activeTab === 'list' && (
-                    <div>
-                        <h2 className="text-2xl font-bold mb-4 px-2">{selectedSubject}</h2>
-                        
-                        <div className="flex gap-2 mb-6 p-1 rounded-xl bg-gray-200/20">
-                        <button 
-                            onClick={() => setSelectedType('note')}
-                            className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all ${selectedType === 'note' ? 'bg-indigo-600 text-white shadow-md' : 'text-gray-500'}`}
-                        >
-                            Notlar
-                        </button>
-                        <button 
-                            onClick={() => setSelectedType('question')}
-                            className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all ${selectedType === 'question' ? 'bg-indigo-600 text-white shadow-md' : 'text-gray-500'}`}
-                        >
-                            Sorular
-                        </button>
-                        </div>
-
-                        <div className="space-y-4">
-                        {getFilteredItems(selectedSubject, selectedType).length === 0 ? (
-                            <div className="text-center py-10 opacity-50">
-                            <Icons.BookOpen size={48} className="mx-auto mb-3" />
-                            <p>Henüz {selectedType === 'note' ? 'not' : 'soru'} eklenmemiş.</p>
+                                <div className="grid grid-cols-2 gap-3">
+                                    {SUBJECTS.map(subject => (
+                                        <button key={subject} onClick={() => { setSelectedSubject(subject); setActiveTab('list'); }} className={`p-4 rounded-xl shadow-sm border text-left active:scale-95 flex flex-col justify-between h-32 ${darkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'}`}>
+                                            <span className="font-semibold text-sm line-clamp-2">{subject}</span>
+                                            <div className="flex justify-between items-end mt-2"><Icons.BookOpen size={16} className="text-indigo-500" /><span className="text-xs px-2 py-1 rounded-full bg-indigo-500/10 text-indigo-500 font-bold">{items.filter(i => i.subject === subject).length}</span></div>
+                                        </button>
+                                    ))}
+                                </div>
                             </div>
-                        ) : (
-                            getFilteredItems(selectedSubject, selectedType).map(item => (
-                            <Card 
-                                key={item.id} 
-                                item={item} 
-                                darkMode={darkMode} 
-                                onDelete={handleDelete} 
-                                onViewImage={(images, index) => setViewerData({ images, index })}
-                            />
-                            ))
                         )}
-                        </div>
-                    </div>
-                    )}
 
-                    {/* ADD SCREEN */}
-                    {activeTab === 'add' && (
-                    <div className="space-y-5 animate-fade-in">
-                        <h2 className="text-xl font-bold">Yeni İçerik Ekle</h2>
-
-                        <div className="grid grid-cols-2 gap-3">
-                            <div className={`border-2 border-dashed rounded-xl p-4 text-center transition-colors relative group overflow-hidden h-40 flex flex-col items-center justify-center
-                                ${darkMode ? 'border-slate-700 hover:border-indigo-500 bg-slate-800' : 'border-gray-300 hover:border-indigo-500 bg-white'}`}>
-                                
-                                {inputImages[0] ? (
-                                    <>
-                                        <img src={inputImages[0]} alt="Soru" className="absolute inset-0 w-full h-full object-cover opacity-80" />
-                                        <button onClick={() => {const ni = [...inputImages]; ni[0]=null; setInputImages(ni)}} className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 z-20 shadow-md">
-                                            <Icons.X size={16} />
-                                        </button>
-                                        <div className="absolute bottom-0 w-full bg-black/50 text-white text-xs py-1">Soru</div>
-                                    </>
-                                ) : (
-                                    <>
-                                        <input type="file" accept="image/*" onChange={(e) => handleFileSelect(e, 0)} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" />
-                                        <Icons.Camera size={24} className="text-indigo-500 mb-2" />
-                                        <span className="text-xs font-bold">Soru Fotoğrafı</span>
-                                    </>
-                                )}
-                            </div>
-
-                             <div className={`border-2 border-dashed rounded-xl p-4 text-center transition-colors relative group overflow-hidden h-40 flex flex-col items-center justify-center
-                                ${darkMode ? 'border-slate-700 hover:border-indigo-500 bg-slate-800' : 'border-gray-300 hover:border-indigo-500 bg-white'}`}>
-                                
-                                {inputImages[1] ? (
-                                    <>
-                                        <img src={inputImages[1]} alt="Cevap" className="absolute inset-0 w-full h-full object-cover opacity-80" />
-                                        <button onClick={() => {const ni = [...inputImages]; ni[1]=null; setInputImages(ni)}} className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 z-20 shadow-md">
-                                            <Icons.X size={16} />
-                                        </button>
-                                        <div className="absolute bottom-0 w-full bg-black/50 text-white text-xs py-1">Cevap / Ek</div>
-                                    </>
-                                ) : (
-                                    <>
-                                        <input type="file" accept="image/*" onChange={(e) => handleFileSelect(e, 1)} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" />
-                                        <Icons.Plus size={24} className="text-gray-500 mb-2" />
-                                        <span className="text-xs font-bold text-gray-500">Ek Fotoğraf</span>
-                                        <span className="text-[10px] text-gray-400">(Opsiyonel)</span>
-                                    </>
-                                )}
-                            </div>
-                        </div>
-
-                        <div>
-                        <label className="text-xs font-bold uppercase opacity-60 mb-1 block">Ders</label>
-                        <select 
-                            value={selectedSubject || ''} 
-                            onChange={(e) => setSelectedSubject(e.target.value)}
-                            className={`w-full p-3 rounded-lg border appearance-none outline-none focus:ring-2 focus:ring-indigo-500
-                            ${darkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-300'}`}
-                        >
-                            <option value="" disabled>Ders Seçiniz</option>
-                            {SUBJECTS.map(s => <option key={s} value={s}>{s}</option>)}
-                        </select>
-                        </div>
-
-                        <div className="flex gap-4">
-                        <label className="flex items-center gap-2 cursor-pointer">
-                            <input type="radio" name="type" checked={selectedType === 'note'} onChange={() => setSelectedType('note')} className="w-4 h-4 text-indigo-600" />
-                            <span>Ders Notu</span>
-                        </label>
-                        <label className="flex items-center gap-2 cursor-pointer">
-                            <input type="radio" name="type" checked={selectedType === 'question'} onChange={() => setSelectedType('question')} className="w-4 h-4 text-indigo-600" />
-                            <span>Soru</span>
-                        </label>
-                        </div>
-
-                        <div>
-                        <label className="text-xs font-bold uppercase opacity-60 mb-1 block">
-                            Başlık / Kısa Açıklama (İsteğe Bağlı)
-                        </label>
-                        <textarea 
-                            value={inputText}
-                            onChange={(e) => setInputText(e.target.value)}
-                            rows={2}
-                            className={`w-full p-3 rounded-lg border outline-none focus:ring-2 focus:ring-indigo-500
-                            ${darkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-300'}`}
-                            placeholder="Örn: 2023 Çıkmış Soru, Madde 14..."
-                        />
-                        </div>
-
-                        {selectedType === 'question' && (
-                        <div className="space-y-3 pl-4 border-l-2 border-indigo-500/30">
+                        {activeTab === 'list' && (
                             <div>
-                            <label className="text-xs font-bold uppercase opacity-60 mb-1 block">Yazılı Cevap (İsteğe Bağlı)</label>
-                            <textarea 
-                                value={inputAnswer}
-                                onChange={(e) => setInputAnswer(e.target.value)}
-                                rows={2}
-                                className={`w-full p-3 rounded-lg border outline-none focus:ring-2 focus:ring-indigo-500
-                                ${darkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-300'}`}
-                                placeholder="Fotoğraf yüklediyseniz burayı boş bırakabilirsiniz."
-                            />
+                                <h2 className="text-2xl font-bold mb-4 px-2">{selectedSubject}</h2>
+                                <div className="flex gap-2 mb-6 p-1 rounded-xl bg-gray-200/20">
+                                    {['note', 'question'].map(type => (
+                                        <button key={type} onClick={() => setSelectedType(type)} className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all ${selectedType === type ? 'bg-indigo-600 text-white shadow-md' : 'text-gray-500'}`}>{type === 'note' ? 'Notlar' : 'Sorular'}</button>
+                                    ))}
+                                </div>
+                                <div className="space-y-4">
+                                    {getFilteredItems(selectedSubject, selectedType).length === 0 ? <div className="text-center py-10 opacity-50"><Icons.BookOpen size={48} className="mx-auto mb-3" /><p>Henüz içerik yok.</p></div> : 
+                                    getFilteredItems(selectedSubject, selectedType).map(item => (
+                                        <div key={item.id} className={`rounded-xl p-4 shadow-sm border ${darkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'}`}>
+                                            <div className="flex justify-between items-start mb-2"><span className="text-xs font-bold px-2 py-1 rounded bg-indigo-500/10 text-indigo-500 uppercase">{item.subject}</span><button onClick={() => handleDelete(item.id)} className="text-red-400 p-1"><Icons.Trash2 size={16} /></button></div>
+                                            {item.text && <p className="mb-3 whitespace-pre-wrap font-medium text-sm">{item.text}</p>}
+                                            {(item.images || [item.image]).filter(Boolean).length > 0 && (
+                                                <div className="grid grid-cols-2 gap-2 mb-3">
+                                                    {(item.images || [item.image]).filter(Boolean).map((src, idx) => (
+                                                        <div key={idx} className="relative group"><img src={src} onClick={() => setViewerData({ images: (item.images || [item.image]), index: idx })} className="rounded-lg h-32 w-full object-cover shadow-sm cursor-pointer" /><div className="absolute bottom-0 left-0 right-0 bg-black/50 text-white text-[10px] text-center py-1 rounded-b-lg">{idx === 0 ? 'Soru' : 'Cevap'}</div></div>
+                                                    ))}
+                                                </div>
+                                            )}
+                                            {item.type === 'question' && item.answer && <div className={`mt-2 p-3 rounded-lg text-sm ${darkMode ? 'bg-slate-700/50' : 'bg-gray-100'}`}><p className="font-bold text-green-500">{item.answer}</p></div>}
+                                            <div className="mt-2 text-right"><span className="text-[10px] opacity-40">{item.date}</span></div>
+                                        </div>
+                                    ))}
+                                </div>
                             </div>
-                        </div>
                         )}
 
-                        <button 
-                        onClick={handleSave}
-                        className="w-full py-4 rounded-xl bg-indigo-600 text-white font-bold text-lg shadow-lg hover:bg-indigo-700 active:scale-95 transition-all flex items-center justify-center gap-2"
-                        >
-                        <Icons.Save size={20} /> Kaydet
-                        </button>
-                    </div>
-                    )}
-                </div>
-
-                {/* FAB */}
-                {activeTab !== 'add' && (
-                    <button 
-                    onClick={() => {
-                        setActiveTab('add');
-                        setInputText('');
-                        setInputImages([null, null]);
-                        setInputAnswer('');
-                    }}
-                    className="fixed bottom-6 right-6 w-14 h-14 bg-indigo-600 text-white rounded-full shadow-2xl flex items-center justify-center hover:bg-indigo-700 active:scale-90 transition-all z-20"
-                    >
-                    <Icons.Plus size={32} />
-                    </button>
-                )}
-
-                </div>
-            );
-        }
-
-        function Card({ item, darkMode, onDelete, onViewImage }) {
-            const [isOpen, setIsOpen] = useState(false);
-
-            const displayImages = [];
-            if (item.images && Array.isArray(item.images)) {
-                displayImages.push(...item.images);
-            } else if (item.image) {
-                displayImages.push(item.image);
-            }
-
-            return (
-                <div className={`rounded-xl p-4 shadow-sm border transition-all ${darkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'}`}>
-                <div className="flex justify-between items-start mb-2">
-                    <span className="text-xs font-bold px-2 py-1 rounded bg-indigo-500/10 text-indigo-500 uppercase tracking-wider">{item.subject}</span>
-                    <button onClick={() => onDelete(item.id)} className="text-red-400 hover:text-red-500 p-1"><Icons.Trash2 size={16} /></button>
-                </div>
-
-                {item.text && (
-                     <div className="prose prose-sm dark:prose-invert max-w-none mb-3">
-                        <p className="whitespace-pre-wrap font-medium">{item.text}</p>
-                    </div>
-                )}
-
-                {displayImages.length > 0 && (
-                    <div className="grid grid-cols-2 gap-2 mb-3">
-                        {displayImages.map((imgSrc, idx) => (
-                            <div key={idx} className={`relative group ${displayImages.length === 1 ? 'col-span-2' : ''}`}>
-                                <img 
-                                    src={imgSrc} 
-                                    alt={`Visual ${idx}`} 
-                                    className="rounded-lg h-40 w-full object-cover shadow-sm cursor-pointer hover:opacity-90 transition-opacity"
-                                    onClick={() => onViewImage(displayImages, idx)}
-                                />
-                                <div className="absolute top-2 right-2 bg-black/60 p-1 rounded-full text-white pointer-events-none">
-                                    <Icons.ZoomIn size={14} />
+                        {activeTab === 'add' && (
+                            <div className="space-y-5 animate-fade-in">
+                                <h2 className="text-xl font-bold">Yeni İçerik Ekle</h2>
+                                <div className="grid grid-cols-2 gap-3">
+                                    {[0, 1].map(idx => (
+                                        <div key={idx} className={`border-2 border-dashed rounded-xl p-4 text-center relative h-40 flex flex-col items-center justify-center overflow-hidden ${darkMode ? 'border-slate-700 bg-slate-800' : 'border-gray-300 bg-white'}`}>
+                                            {inputImages[idx] ? (
+                                                <><img src={inputImages[idx]} className="absolute inset-0 w-full h-full object-cover opacity-80" /><button onClick={() => {const n=[...inputImages];n[idx]=null;setInputImages(n)}} className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 z-20"><Icons.X size={16} /></button><div className="absolute bottom-0 w-full bg-black/50 text-white text-xs py-1">{idx===0?'Soru':'Cevap'}</div></>
+                                            ) : (
+                                                <><input type="file" accept="image/*" onChange={(e) => handleFileSelect(e, idx)} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" />{idx===0?<Icons.Camera size={24} className="text-indigo-500 mb-2"/>:<Icons.Plus size={24} className="text-gray-500 mb-2"/>}<span className="text-xs font-bold">{idx===0?'Soru Fotoğrafı':'Ek Fotoğraf'}</span></>
+                                            )}
+                                        </div>
+                                    ))}
                                 </div>
-                                <div className="absolute bottom-0 left-0 right-0 bg-black/50 text-white text-[10px] text-center py-1 rounded-b-lg">
-                                    {idx === 0 ? 'Görsel 1 (Soru)' : 'Görsel 2 (Cevap/Ek)'}
-                                </div>
+                                <div><label className="text-xs font-bold uppercase opacity-60 mb-1 block">Ders</label><select value={selectedSubject || ''} onChange={(e) => setSelectedSubject(e.target.value)} className={`w-full p-3 rounded-lg border outline-none ${darkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-300'}`}><option value="" disabled>Ders Seçiniz</option>{SUBJECTS.map(s => <option key={s} value={s}>{s}</option>)}</select></div>
+                                <div className="flex gap-4">{['note', 'question'].map(type => <label key={type} className="flex items-center gap-2 cursor-pointer"><input type="radio" name="type" checked={selectedType === type} onChange={() => setSelectedType(type)} className="w-4 h-4 text-indigo-600" /><span>{type === 'note' ? 'Ders Notu' : 'Soru'}</span></label>)}</div>
+                                <div><label className="text-xs font-bold uppercase opacity-60 mb-1 block">Metin / Başlık</label><textarea value={inputText} onChange={(e) => setInputText(e.target.value)} rows={2} className={`w-full p-3 rounded-lg border outline-none ${darkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-300'}`} placeholder="İçerik..." /></div>
+                                {selectedType === 'question' && <div><label className="text-xs font-bold uppercase opacity-60 mb-1 block">Cevap (Yazılı)</label><textarea value={inputAnswer} onChange={(e) => setInputAnswer(e.target.value)} rows={2} className={`w-full p-3 rounded-lg border outline-none ${darkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-300'}`} placeholder="Cevap..." /></div>}
+                                <button onClick={handleSave} className="w-full py-4 rounded-xl bg-indigo-600 text-white font-bold text-lg shadow-lg hover:bg-indigo-700 flex items-center justify-center gap-2"><Icons.Save size={20} /> Kaydet</button>
                             </div>
-                        ))}
+                        )}
                     </div>
-                )}
 
-                {item.type === 'question' && (
-                    <div className="mt-2 border-t border-dashed border-gray-500/30 pt-2">
-                    <button 
-                        onClick={() => setIsOpen(!isOpen)}
-                        className="flex items-center gap-2 text-sm font-semibold text-indigo-400 hover:text-indigo-300 w-full"
-                    >
-                        {isOpen ? <Icons.ChevronUp size={16} /> : <Icons.ChevronDown size={16} />}
-                        {isOpen ? 'Cevabı / Açıklamayı Göster' : 'Cevabı / Açıklamayı Gizle'}
-                    </button>
-                    
-                    {isOpen && (
-                        <div className={`mt-3 p-3 rounded-lg text-sm animate-fade-in ${darkMode ? 'bg-slate-700/50' : 'bg-gray-100'}`}>
-                            {item.answer ? (
-                                <p className="font-bold text-green-500">{item.answer}</p>
-                            ) : (
-                                <p className="opacity-70 italic">Yazılı açıklama girilmemiş. Cevap için 2. fotoğrafa bakınız.</p>
-                            )}
-                            {item.explanation && <p className="opacity-90 mt-1">{item.explanation}</p>}
-                        </div>
-                    )}
-                    </div>
-                )}
-                
-                <div className="mt-2 text-right">
-                    <span className="text-[10px] opacity-40">{item.date}</span>
-                </div>
+                    {activeTab !== 'add' && <button onClick={() => { setActiveTab('add'); setInputText(''); setInputImages([null, null]); setInputAnswer(''); }} className="fixed bottom-6 right-6 w-14 h-14 bg-indigo-600 text-white rounded-full shadow-2xl flex items-center justify-center hover:bg-indigo-700 active:scale-90 transition-all z-20"><Icons.Plus size={32} /></button>}
                 </div>
             );
         }
