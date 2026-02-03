@@ -8,44 +8,32 @@
     <!-- PWA Manifest (Uygulama Kimliği) -->
     <link rel="manifest" href="data:application/json;base64,eyJuYW1lIjoiSE1HUyBBc2lzdGFuIiwic2hvcnRfbmFtZSI6IkhNR1MiLCJzdGFydF91cmwiOiIuLyIsImRpc3BsYXkiOiJzdGFuZGFsb25lIiwiYmFja2dyb3VuZF9jb2xvciI6IiMxZTI5M2IiLCJ0aGVtZV9jb2xvciI6IiM0ZjQ2ZTUiLCJpY29ucyI6W3sic3JjIjoiaHR0cHM6Ly91cGxvYWQud2lraW1lZGlhLm9yZy93aWtpcGVkaWEvY29tbW9ucy90aHVtYi81LzU1L1NjYWxlX29mX2p1c3RpY2VfMi5zdmcvMTIwMHB4LVNjYWxlX29mX2p1c3RpY2VfMi5zdmcucG5nIiwic2l6ZXMiOiIxOTJ4MTkyIiwidHlwZSI6ImltYWdlL3BuZyJ9XX0=">
 
-    <!-- Tailwind CSS (Tasarım için) -->
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     
-    <!-- Cropper.js (Kırpma ve Döndürme Aracı) -->
+    <!-- Cropper.js -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css" />
     <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
 
-    <!-- React ve ReactDOM (Uygulama Motoru) -->
+    <!-- React ve ReactDOM -->
     <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
     
-    <!-- Babel (JSX kodunu tarayıcının anlaması için) -->
+    <!-- Babel -->
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
+    <!-- Firebase (Bulut Senkronizasyonu İçin) -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+
     <style>
-        /* PWA gibi hissettirmesi için ek ayarlar */
         body { -webkit-tap-highlight-color: transparent; }
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-        
-        /* Zoom animasyonları */
         .zoom-image { transition: transform 0.2s ease-out; }
-
-        /* Cropper stillerini özelleştirme */
-        .cropper-view-box,
-        .cropper-face {
-            border-radius: 4px;
-        }
-        /* Cropper arka planını daha belirgin yap */
-        .cropper-modal {
-            opacity: 0.8;
-            background-color: #000;
-        }
-        
-        /* MOBİL DÜZELTMESİ: Dokunma çakışmalarını önler */
-        .cropper-container {
-            touch-action: none; 
-        }
+        .cropper-view-box, .cropper-face { border-radius: 4px; }
+        .cropper-modal { opacity: 0.8; background-color: #000; }
+        .cropper-container { touch-action: none; }
     </style>
 </head>
 <body class="bg-gray-100 text-gray-900 transition-colors duration-300">
@@ -54,7 +42,7 @@
     <script type="text/babel">
         const { useState, useEffect, useRef } = React;
 
-        // --- İKONLAR (SVG Olarak Tanımlı) ---
+        // --- İKONLAR ---
         const Icon = ({ path, size = 24, className = "" }) => (
             <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
                 {path}
@@ -81,8 +69,9 @@
             RotateCw: (props) => <Icon {...props} path={<><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8" /><path d="M21 3v5h-5" /></>} />,
             Check: (props) => <Icon {...props} path={<polyline points="20 6 9 17 4 12" />} />,
             RotateCcw: (props) => <Icon {...props} path={<><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0 6.74 2.74L3 8" /><path d="M3 3v5h5" /></>} />,
-            Download: (props) => <Icon {...props} path={<><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></>} />,
-            Upload: (props) => <Icon {...props} path={<><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></>} />,
+            Settings: (props) => <Icon {...props} path={<><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.1a2 2 0 0 1-1-1.74v-.47a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></>} />,
+            Cloud: (props) => <Icon {...props} path={<path d="M17.5 19c0-1.7-1.3-3-3-3h-1.1c-.1-2.9-2.4-5.1-5.3-5.1-2.1 0-4 1.2-4.9 3.1-.2 0-.4 0-.6 0-2.5 0-4.5 2-4.5 4.5S2.5 23 5 23h12.5c2.5 0 4.5-2 4.5-4.5z"/>} />,
+            CloudOff: (props) => <Icon {...props} path={<><path d="M22.61 16.95A5 5 0 0 0 18 10h-1.26a8 8 0 0 0-7.05-6M5 5a8 8 0 0 0 4 7h1.8a5 5 0 0 0 4 10h2.17M2 2l20 20"/></>} />,
         };
 
         const SUBJECTS = [
@@ -91,13 +80,12 @@
             "İcra ve İflas Hukuku", "İş Hukuku", "Vergi Hukuku", "Türk Hukuk Tarihi", "Genel Hukuk Bilgisi"
         ];
 
-        // GÖRSEL DÜZENLEYİCİ BİLEŞENİ
+        // --- GÖRSEL DÜZENLEYİCİ BİLEŞENİ ---
         function ImageEditor({ src, onSave, onCancel, title }) {
             const imageRef = useRef(null);
             const cropperRef = useRef(null);
             const [isReady, setIsReady] = useState(false);
 
-            // MOBİL DÜZELTMESİ: onImageLoad ile başlatma
             const handleImageLoad = () => {
                 const imageElement = imageRef.current;
                 if (imageElement && window.Cropper) {
@@ -124,38 +112,25 @@
             };
 
             useEffect(() => {
-                // Temizlik
-                return () => {
-                    if (cropperRef.current) {
-                        cropperRef.current.destroy();
-                    }
-                };
+                return () => { if (cropperRef.current) cropperRef.current.destroy(); };
             }, []);
 
-            const handleRotateRight = () => {
-                if (cropperRef.current) cropperRef.current.rotate(90);
-            };
-
-            const handleRotateLeft = () => {
-                if (cropperRef.current) cropperRef.current.rotate(-90);
-            };
-            
-            const handleReset = () => {
-                 if (cropperRef.current) cropperRef.current.reset();
-            };
+            const handleRotateRight = () => cropperRef.current?.rotate(90);
+            const handleRotateLeft = () => cropperRef.current?.rotate(-90);
+            const handleReset = () => cropperRef.current?.reset();
 
             const handleSave = () => {
                 if (cropperRef.current) {
                     const canvas = cropperRef.current.getCroppedCanvas({
-                        maxWidth: 1200, 
-                        maxHeight: 1200,
+                        maxWidth: 1024, 
+                        maxHeight: 1024,
                         imageSmoothingEnabled: true,
                         imageSmoothingQuality: 'high',
                         fillColor: '#fff',
                     });
                     
                     if (canvas) {
-                        const croppedImage = canvas.toDataURL('image/jpeg', 0.85);
+                        const croppedImage = canvas.toDataURL('image/jpeg', 0.75); // Boyut için sıkıştırma oranı 0.75
                         onSave(croppedImage);
                     }
                 }
@@ -202,65 +177,33 @@
             );
         }
 
-        // TAM EKRAN GÖRSEL GÖRÜNTÜLEYİCİ (GÜNCELLENDİ: GALERİ VE SWIPE DESTEĞİ)
+        // --- TAM EKRAN GÖRSEL GÖRÜNTÜLEYİCİ ---
         function ImageViewer({ images, initialIndex, onClose }) {
             const [currentIndex, setCurrentIndex] = useState(initialIndex);
             const [scale, setScale] = useState(1);
             
-            // Swipe için referanslar
             const touchStartX = useRef(0);
             const touchEndX = useRef(0);
             
-            const handleZoomIn = (e) => {
-                e.stopPropagation();
-                setScale(prev => Math.min(prev + 0.5, 4));
-            };
-
-            const handleZoomOut = (e) => {
-                e.stopPropagation();
-                setScale(prev => Math.max(prev - 0.5, 1));
-            };
+            const handleZoomIn = (e) => { e.stopPropagation(); setScale(prev => Math.min(prev + 0.5, 4)); };
+            const handleZoomOut = (e) => { e.stopPropagation(); setScale(prev => Math.max(prev - 0.5, 1)); };
 
             const handleNext = (e) => {
                 if(e) e.stopPropagation();
-                if (currentIndex < images.length - 1) {
-                    setCurrentIndex(currentIndex + 1);
-                    setScale(1); // Resmi değiştirence zoom'u sıfırla
-                }
+                if (currentIndex < images.length - 1) { setCurrentIndex(currentIndex + 1); setScale(1); }
             };
 
             const handlePrev = (e) => {
                 if(e) e.stopPropagation();
-                if (currentIndex > 0) {
-                    setCurrentIndex(currentIndex - 1);
-                    setScale(1);
-                }
+                if (currentIndex > 0) { setCurrentIndex(currentIndex - 1); setScale(1); }
             };
 
-            // Swipe Mantığı
-            const handleTouchStart = (e) => {
-                touchStartX.current = e.changedTouches[0].screenX;
-            };
-
+            const handleTouchStart = (e) => { touchStartX.current = e.changedTouches[0].screenX; };
             const handleTouchEnd = (e) => {
                 touchEndX.current = e.changedTouches[0].screenX;
-                handleSwipe();
-            };
-
-            const handleSwipe = () => {
-                // Zoom yapılmışsa swipe'ı engelle ki kullanıcı resim içinde gezinebilsin
                 if (scale > 1) return;
-
                 const diff = touchStartX.current - touchEndX.current;
-                const threshold = 50; // Kaydırma hassasiyeti
-
-                if (diff > threshold) {
-                    // Sola kaydırma -> Sonraki resim
-                    handleNext();
-                } else if (diff < -threshold) {
-                    // Sağa kaydırma -> Önceki resim
-                    handlePrev();
-                }
+                if (diff > 50) handleNext(); else if (diff < -50) handlePrev();
             };
 
             return (
@@ -270,36 +213,24 @@
                     onTouchStart={handleTouchStart}
                     onTouchEnd={handleTouchEnd}
                 >
-                    {/* Üst Kontroller */}
                     <div className="absolute top-4 right-4 z-50 flex gap-4">
-                        <button onClick={handleZoomOut} className="p-2 bg-white/10 rounded-full text-white hover:bg-white/20">
-                            <Icons.ZoomOut size={24} />
-                        </button>
-                         <button onClick={handleZoomIn} className="p-2 bg-white/10 rounded-full text-white hover:bg-white/20">
-                            <Icons.ZoomIn size={24} />
-                        </button>
-                        <button onClick={onClose} className="p-2 bg-red-500/80 rounded-full text-white hover:bg-red-600">
-                            <Icons.X size={24} />
-                        </button>
+                        <button onClick={handleZoomOut} className="p-2 bg-white/10 rounded-full text-white hover:bg-white/20"><Icons.ZoomOut size={24} /></button>
+                        <button onClick={handleZoomIn} className="p-2 bg-white/10 rounded-full text-white hover:bg-white/20"><Icons.ZoomIn size={24} /></button>
+                        <button onClick={onClose} className="p-2 bg-red-500/80 rounded-full text-white hover:bg-red-600"><Icons.X size={24} /></button>
                     </div>
 
-                    {/* Navigasyon Butonları (Masaüstü için) */}
                     {currentIndex > 0 && (
-                        <button onClick={handlePrev} className="absolute left-4 top-1/2 -translate-y-1/2 p-3 bg-white/10 rounded-full text-white hover:bg-white/30 z-50">
+                        <button onClick={handlePrev} className="absolute left-4 top-1/2 -translate-y-1/2 p-3 bg-white/10 rounded-full text-white hover:bg-white/30 z-50 hidden md:block">
                             <Icons.ChevronLeft size={32} />
                         </button>
                     )}
                     {currentIndex < images.length - 1 && (
-                        <button onClick={handleNext} className="absolute right-4 top-1/2 -translate-y-1/2 p-3 bg-white/10 rounded-full text-white hover:bg-white/30 z-50">
+                        <button onClick={handleNext} className="absolute right-4 top-1/2 -translate-y-1/2 p-3 bg-white/10 rounded-full text-white hover:bg-white/30 z-50 hidden md:block">
                             <Icons.ChevronRight size={32} />
                         </button>
                     )}
 
-                    {/* Resim Alanı */}
-                    <div 
-                        className="w-full h-full overflow-hidden flex items-center justify-center p-2" 
-                        onClick={(e) => e.stopPropagation()}
-                    >
+                    <div className="w-full h-full overflow-hidden flex items-center justify-center p-2" onClick={(e) => e.stopPropagation()}>
                         <img 
                             src={images[currentIndex]} 
                             alt={`Slide ${currentIndex}`} 
@@ -308,14 +239,56 @@
                         />
                     </div>
 
-                    {/* Alt Bilgi (Page Indicator) */}
                     <div className="absolute bottom-6 left-0 right-0 flex justify-center gap-2">
                         {images.map((_, idx) => (
-                            <div 
-                                key={idx} 
-                                className={`h-2 w-2 rounded-full transition-all ${idx === currentIndex ? 'bg-white w-4' : 'bg-white/30'}`}
-                            />
+                            <div key={idx} className={`h-2 w-2 rounded-full transition-all ${idx === currentIndex ? 'bg-white w-4' : 'bg-white/30'}`} />
                         ))}
+                    </div>
+                </div>
+            );
+        }
+
+        // --- AYARLAR MODALI ---
+        function SettingsModal({ isOpen, onClose, firebaseConfig, setFirebaseConfig, onConnect }) {
+            const [configInput, setConfigInput] = useState(firebaseConfig ? JSON.stringify(firebaseConfig, null, 2) : '');
+
+            if (!isOpen) return null;
+
+            return (
+                <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4 animate-fade-in" onClick={onClose}>
+                    <div className="bg-white dark:bg-slate-800 rounded-xl p-6 w-full max-w-md shadow-2xl" onClick={e => e.stopPropagation()}>
+                        <div className="flex justify-between items-center mb-4">
+                            <h2 className="text-xl font-bold flex items-center gap-2">
+                                <Icons.Settings size={24} /> Ayarlar
+                            </h2>
+                            <button onClick={onClose}><Icons.X size={24} /></button>
+                        </div>
+
+                        <div className="space-y-4">
+                            <div>
+                                <h3 className="font-semibold mb-2 flex items-center gap-2">
+                                    <Icons.Cloud size={20} className="text-blue-500" /> Bulut Senkronizasyonu
+                                </h3>
+                                <p className="text-sm opacity-70 mb-2">
+                                    PC ve Mobil cihazlarınızın birbirini görmesi için Firebase Config bilginizi buraya yapıştırın.
+                                </p>
+                                <textarea 
+                                    className="w-full h-40 p-3 text-xs font-mono border rounded bg-gray-50 dark:bg-slate-900 dark:border-slate-700"
+                                    placeholder='{ "apiKey": "...", "authDomain": "...", ... }'
+                                    value={configInput}
+                                    onChange={(e) => setConfigInput(e.target.value)}
+                                />
+                            </div>
+                            <button 
+                                onClick={() => onConnect(configInput)}
+                                className="w-full py-3 bg-indigo-600 text-white rounded-lg font-bold hover:bg-indigo-700"
+                            >
+                                Bağlan ve Kaydet
+                            </button>
+                            <p className="text-[10px] text-center opacity-50 mt-2">
+                                * Verileriniz sadece kendi Firebase hesabınızda saklanır. Güvenlidir.
+                            </p>
+                        </div>
                     </div>
                 </div>
             );
@@ -330,41 +303,89 @@
             const [loading, setLoading] = useState(false);
             const [processingText, setProcessingText] = useState('');
             
+            // Firebase State
+            const [firebaseConfig, setFirebaseConfig] = useState(null);
+            const [isCloudConnected, setIsCloudConnected] = useState(false);
+            const [showSettings, setShowSettings] = useState(false);
+            
             // Form States
             const [inputImages, setInputImages] = useState([null, null]); 
             const [inputText, setInputText] = useState('');
             const [inputAnswer, setInputAnswer] = useState(''); 
             
-            // Editör ve Viewer State'leri (GÜNCELLENDİ)
-            const [viewerData, setViewerData] = useState(null); // { images: [], index: 0 }
+            const [viewerData, setViewerData] = useState(null);
             const [editingImage, setEditingImage] = useState(null); 
             const [editingIndex, setEditingIndex] = useState(null); 
             
-            // Dosya Yükleme Referansı (Import için)
             const fileInputRef = useRef(null);
 
+            // Başlangıç: LocalStorage'dan Veri ve Config Çek
             useEffect(() => {
+                // Tema
+                const savedConfig = localStorage.getItem('hmgs_firebase_config');
+                if (savedConfig) {
+                    try {
+                        const config = JSON.parse(savedConfig);
+                        setFirebaseConfig(config);
+                        connectToFirebase(config);
+                    } catch(e) { console.error(e); }
+                } else {
+                    // Firebase yoksa yerel veriyi çek
+                    loadLocalData();
+                }
+            }, []);
+
+            const loadLocalData = () => {
                 const savedItems = localStorage.getItem('hmgs_items');
                 if (savedItems) {
                     try { setItems(JSON.parse(savedItems)); } catch (e) { console.error(e); }
                 }
-            }, []);
+            };
 
-            useEffect(() => {
+            const connectToFirebase = (config) => {
                 try {
-                    localStorage.setItem('hmgs_items', JSON.stringify(items));
+                    if (!firebase.apps.length) {
+                        firebase.initializeApp(config);
+                    }
+                    const db = firebase.firestore();
+                    setIsCloudConnected(true);
+                    
+                    // Canlı Dinleyici Başlat
+                    db.collection('items').orderBy('date', 'desc').onSnapshot((snapshot) => {
+                        const cloudItems = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                        setItems(cloudItems);
+                    }, (error) => {
+                        console.error("Firebase Sync Hatası:", error);
+                        alert("Bulut bağlantısı koptu, yerel moda geçiliyor.");
+                        setIsCloudConnected(false);
+                        loadLocalData();
+                    });
+                    
                 } catch (error) {
-                    console.error("Kayıt hatası:", error);
-                    alert("⚠️ Hafıza doldu! Eklediğiniz görseller çok yer kaplıyor. Lütfen eski notları silin.");
+                    console.error("Firebase Bağlantı Hatası:", error);
+                    alert("Firebase yapılandırması hatalı.");
+                    setIsCloudConnected(false);
                 }
-            }, [items]);
+            };
+
+            const handleSettingsSave = (configStr) => {
+                try {
+                    const config = JSON.parse(configStr);
+                    setFirebaseConfig(config);
+                    localStorage.setItem('hmgs_firebase_config', JSON.stringify(config));
+                    connectToFirebase(config);
+                    setShowSettings(false);
+                    alert("Bulut bağlantısı kuruldu! Verileriniz senkronize ediliyor.");
+                } catch (e) {
+                    alert("Geçersiz JSON formatı!");
+                }
+            };
 
             const toggleDarkMode = () => setDarkMode(!darkMode);
 
             const handleFileSelect = (e, index) => {
                 const file = e.target.files[0];
                 if (!file) return;
-
                 const reader = new FileReader();
                 reader.onload = (event) => {
                     setEditingImage(event.target.result); 
@@ -378,42 +399,21 @@
                 const newImages = [...inputImages];
                 newImages[editingIndex] = croppedImage;
                 setInputImages(newImages);
-                
                 if (editingIndex === 0) {
                     if (window.confirm("📸 Bu fotoğrafta cevap/çözüm de var mı?\n\n'Tamam' derseniz aynı fotoğraf üzerinden cevabı da kırpabilirsiniz.")) {
-                        setEditingIndex(1); 
-                        return; 
+                        setEditingIndex(1); return; 
                     }
                 }
-
                 setEditingImage(null);
                 setEditingIndex(null);
             };
 
-            const handleEditorCancel = () => {
-                setEditingImage(null);
-                setEditingIndex(null);
-            };
-
-            const removeImage = (index) => {
-                const newImages = [...inputImages];
-                newImages[index] = null;
-                setInputImages(newImages);
-            }
-
-            const handleSave = () => {
-                if (!selectedSubject) {
-                    alert("Lütfen bir ders seçin.");
-                    return;
-                }
-                
-                if (!inputText && !inputImages[0] && !inputImages[1]) {
-                    alert("Lütfen en az bir metin veya fotoğraf ekleyin.");
-                    return;
-                }
+            const handleSave = async () => {
+                if (!selectedSubject) { alert("Lütfen bir ders seçin."); return; }
+                if (!inputText && !inputImages[0] && !inputImages[1]) { alert("İçerik giriniz."); return; }
 
                 const newItem = {
-                    id: Date.now(),
+                    id: Date.now(), // Local için ID, Firebase için aşağıda eziyoruz ama kalsın
                     subject: selectedSubject,
                     type: selectedType,
                     text: inputText,
@@ -422,61 +422,51 @@
                     date: new Date().toLocaleDateString('tr-TR')
                 };
 
-                setItems([newItem, ...items]);
-                
-                setInputText('');
-                setInputAnswer('');
-                setInputImages([null, null]);
-                setActiveTab('home');
+                setLoading(true);
+                setProcessingText('Kaydediliyor...');
+
+                try {
+                    if (isCloudConnected) {
+                        // Firebase'e Kaydet
+                        const db = firebase.firestore();
+                        await db.collection('items').add(newItem);
+                    } else {
+                        // Yerel Kaydet
+                        const updatedItems = [newItem, ...items];
+                        setItems(updatedItems);
+                        localStorage.setItem('hmgs_items', JSON.stringify(updatedItems));
+                    }
+                    
+                    setInputText('');
+                    setInputAnswer('');
+                    setInputImages([null, null]);
+                    setActiveTab('home');
+                } catch (error) {
+                    console.error("Kayıt hatası:", error);
+                    alert("Kaydedilemedi: " + error.message);
+                } finally {
+                    setLoading(false);
+                }
             };
 
-            const handleDelete = (id) => {
-                if(window.confirm("Silmek istediğinize emin misiniz?")) {
-                    setItems(items.filter(item => item.id !== id));
+            const handleDelete = async (id) => {
+                if(!window.confirm("Silmek istediğinize emin misiniz?")) return;
+
+                if (isCloudConnected) {
+                    try {
+                        await firebase.firestore().collection('items').doc(id).delete();
+                    } catch (err) {
+                        alert("Silinemedi: " + err.message);
+                    }
+                } else {
+                    const filtered = items.filter(item => item.id !== id);
+                    setItems(filtered);
+                    localStorage.setItem('hmgs_items', JSON.stringify(filtered));
                 }
             };
 
             const getFilteredItems = (subject, type) => {
                 return items.filter(item => item.subject === subject && item.type === type);
-            };
-
-            // --- YENİ ÖZELLİK: YEDEKLEME SİSTEMİ ---
-            const handleExport = () => {
-                const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(items));
-                const downloadAnchorNode = document.createElement('a');
-                downloadAnchorNode.setAttribute("href", dataStr);
-                downloadAnchorNode.setAttribute("download", "hmgs_yedek_" + new Date().toISOString().slice(0,10) + ".json");
-                document.body.appendChild(downloadAnchorNode);
-                downloadAnchorNode.click();
-                downloadAnchorNode.remove();
-            };
-
-            const handleImportClick = () => {
-                fileInputRef.current.click();
-            };
-
-            const handleImportFile = (e) => {
-                const file = e.target.files[0];
-                if (!file) return;
-                
-                const reader = new FileReader();
-                reader.onload = (event) => {
-                    try {
-                        const importedData = JSON.parse(event.target.result);
-                        if(Array.isArray(importedData)) {
-                             if(window.confirm(`Yedek dosyasında ${importedData.length} adet kayıt bulundu. Mevcut kayıtların üzerine eklensin mi?`)) {
-                                 setItems(prev => [...importedData, ...prev]);
-                                 alert("Yedekleme başarıyla yüklendi!");
-                             }
-                        } else {
-                            alert("Geçersiz yedek dosyası!");
-                        }
-                    } catch(err) {
-                        alert("Dosya okunamadı. Hata: " + err);
-                    }
-                    e.target.value = ''; // Reset input
-                };
-                reader.readAsText(file);
             };
 
             if (loading) {
@@ -491,32 +481,9 @@
             return (
                 <div className={`min-h-screen transition-colors duration-300 ${darkMode ? 'bg-slate-900 text-slate-100' : 'bg-gray-50 text-gray-900'} font-sans pb-24`}>
                 
-                {/* Modallar */}
-                {viewerData && (
-                    <ImageViewer 
-                        images={viewerData.images} 
-                        initialIndex={viewerData.index}
-                        onClose={() => setViewerData(null)} 
-                    />
-                )}
-                {editingImage && (
-                    <ImageEditor 
-                        key={editingIndex} // ÖNEMLİ: Index değişince editörü sıfırla (Soru -> Cevap geçişi için)
-                        src={editingImage} 
-                        title={editingIndex === 0 ? "1. Adım: Soruyu Kırp" : "2. Adım: Cevabı Kırp"}
-                        onSave={handleEditorSave} 
-                        onCancel={handleEditorCancel} 
-                    />
-                )}
-
-                {/* Gizli Dosya Input (Yükleme için) */}
-                <input 
-                    type="file" 
-                    ref={fileInputRef} 
-                    onChange={handleImportFile} 
-                    accept=".json" 
-                    style={{display: 'none'}} 
-                />
+                {viewerData && <ImageViewer images={viewerData.images} initialIndex={viewerData.index} onClose={() => setViewerData(null)} />}
+                {editingImage && <ImageEditor key={editingIndex} src={editingImage} title={editingIndex === 0 ? "1. Adım: Soruyu Kırp" : "2. Adım: Cevabı Kırp"} onSave={handleEditorSave} onCancel={() => setEditingImage(null)} />}
+                <SettingsModal isOpen={showSettings} onClose={() => setShowSettings(false)} firebaseConfig={firebaseConfig} onConnect={handleSettingsSave} />
 
                 {/* Header */}
                 <div className={`p-4 shadow-md sticky top-0 z-40 flex justify-between items-center ${darkMode ? 'bg-slate-800' : 'bg-white'}`}>
@@ -529,10 +496,19 @@
                         <h1 className="text-xl font-bold bg-gradient-to-r from-indigo-500 to-purple-500 bg-clip-text text-transparent">
                             HMGS Asistan
                         </h1>
+                        {isCloudConnected ? 
+                            <span className="text-[10px] bg-green-500/20 text-green-500 px-2 py-1 rounded-full animate-pulse">Bulut Aktif</span> : 
+                            <span className="text-[10px] bg-gray-500/20 text-gray-500 px-2 py-1 rounded-full">Yerel Mod</span>
+                        }
                     </div>
-                    <button onClick={toggleDarkMode} className={`p-2 rounded-full ${darkMode ? 'bg-slate-700' : 'bg-gray-200'}`}>
-                    {darkMode ? <Icons.Sun size={20} /> : <Icons.Moon size={20} />}
-                    </button>
+                    <div className="flex gap-2">
+                        <button onClick={() => setShowSettings(true)} className={`p-2 rounded-full ${darkMode ? 'bg-slate-700' : 'bg-gray-200'}`}>
+                            <Icons.Settings size={20} />
+                        </button>
+                        <button onClick={toggleDarkMode} className={`p-2 rounded-full ${darkMode ? 'bg-slate-700' : 'bg-gray-200'}`}>
+                            {darkMode ? <Icons.Sun size={20} /> : <Icons.Moon size={20} />}
+                        </button>
+                    </div>
                 </div>
 
                 {/* Main Content */}
@@ -543,7 +519,9 @@
                     <div className="space-y-4">
                         <div className={`p-6 rounded-2xl bg-gradient-to-br from-indigo-600 to-purple-700 text-white mb-6 shadow-lg`}>
                         <h2 className="text-2xl font-bold mb-2">Hoş Geldin!</h2>
-                        <p className="opacity-90">Çalışmaların nasıl gidiyor?</p>
+                        <p className="opacity-90">
+                            {isCloudConnected ? "Bulut senkronizasyonu aktif. Tüm cihazların eşit." : "Yerel moddasın. Senkronizasyon için ayarlardan bulutu bağla."}
+                        </p>
                         <div className="mt-4 flex gap-3">
                             <div className="text-center">
                                 <span className="block text-2xl font-bold">{items.filter(i => i.type === 'note').length}</span>
@@ -554,19 +532,6 @@
                                 <span className="text-xs opacity-75">Soru</span>
                             </div>
                         </div>
-                        </div>
-
-                        {/* YEDEKLEME MENÜSÜ */}
-                        <div className={`p-4 rounded-xl border mb-4 flex gap-2 ${darkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'}`}>
-                             <button onClick={handleExport} className="flex-1 flex flex-col items-center gap-2 p-2 hover:bg-gray-500/10 rounded-lg transition-colors">
-                                <div className="p-2 bg-green-500/10 text-green-500 rounded-full"><Icons.Download size={20} /></div>
-                                <span className="text-xs font-bold">Yedeği İndir (PC)</span>
-                             </button>
-                             <div className="w-px bg-gray-500/20"></div>
-                             <button onClick={handleImportClick} className="flex-1 flex flex-col items-center gap-2 p-2 hover:bg-gray-500/10 rounded-lg transition-colors">
-                                <div className="p-2 bg-blue-500/10 text-blue-500 rounded-full"><Icons.Upload size={20} /></div>
-                                <span className="text-xs font-bold">Yedeği Yükle (Mobil)</span>
-                             </button>
                         </div>
 
                         <div className="grid grid-cols-2 gap-3">
@@ -637,54 +602,41 @@
                     <div className="space-y-5 animate-fade-in">
                         <h2 className="text-xl font-bold">Yeni İçerik Ekle</h2>
 
-                        {/* Fotoğraf Yükleme Alanları */}
                         <div className="grid grid-cols-2 gap-3">
-                             {/* 1. FOTOĞRAF (SORU) */}
                             <div className={`border-2 border-dashed rounded-xl p-4 text-center transition-colors relative group overflow-hidden h-40 flex flex-col items-center justify-center
                                 ${darkMode ? 'border-slate-700 hover:border-indigo-500 bg-slate-800' : 'border-gray-300 hover:border-indigo-500 bg-white'}`}>
                                 
                                 {inputImages[0] ? (
                                     <>
                                         <img src={inputImages[0]} alt="Soru" className="absolute inset-0 w-full h-full object-cover opacity-80" />
-                                        <button onClick={() => removeImage(0)} className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 z-20 shadow-md">
+                                        <button onClick={() => {const ni = [...inputImages]; ni[0]=null; setInputImages(ni)}} className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 z-20 shadow-md">
                                             <Icons.X size={16} />
                                         </button>
                                         <div className="absolute bottom-0 w-full bg-black/50 text-white text-xs py-1">Soru</div>
                                     </>
                                 ) : (
                                     <>
-                                        <input 
-                                            type="file" 
-                                            accept="image/*"
-                                            onChange={(e) => handleFileSelect(e, 0)}
-                                            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
-                                        />
+                                        <input type="file" accept="image/*" onChange={(e) => handleFileSelect(e, 0)} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" />
                                         <Icons.Camera size={24} className="text-indigo-500 mb-2" />
                                         <span className="text-xs font-bold">Soru Fotoğrafı</span>
                                     </>
                                 )}
                             </div>
 
-                            {/* 2. FOTOĞRAF (CEVAP/EK) */}
                              <div className={`border-2 border-dashed rounded-xl p-4 text-center transition-colors relative group overflow-hidden h-40 flex flex-col items-center justify-center
                                 ${darkMode ? 'border-slate-700 hover:border-indigo-500 bg-slate-800' : 'border-gray-300 hover:border-indigo-500 bg-white'}`}>
                                 
                                 {inputImages[1] ? (
                                     <>
                                         <img src={inputImages[1]} alt="Cevap" className="absolute inset-0 w-full h-full object-cover opacity-80" />
-                                        <button onClick={() => removeImage(1)} className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 z-20 shadow-md">
+                                        <button onClick={() => {const ni = [...inputImages]; ni[1]=null; setInputImages(ni)}} className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 z-20 shadow-md">
                                             <Icons.X size={16} />
                                         </button>
                                         <div className="absolute bottom-0 w-full bg-black/50 text-white text-xs py-1">Cevap / Ek</div>
                                     </>
                                 ) : (
                                     <>
-                                        <input 
-                                            type="file" 
-                                            accept="image/*"
-                                            onChange={(e) => handleFileSelect(e, 1)}
-                                            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
-                                        />
+                                        <input type="file" accept="image/*" onChange={(e) => handleFileSelect(e, 1)} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" />
                                         <Icons.Plus size={24} className="text-gray-500 mb-2" />
                                         <span className="text-xs font-bold text-gray-500">Ek Fotoğraf</span>
                                         <span className="text-[10px] text-gray-400">(Opsiyonel)</span>
@@ -779,7 +731,6 @@
         function Card({ item, darkMode, onDelete, onViewImage }) {
             const [isOpen, setIsOpen] = useState(false);
 
-            // Geriye dönük uyumluluk: Eski veri yapısında 'image' vardı, yeni yapıda 'images' array var.
             const displayImages = [];
             if (item.images && Array.isArray(item.images)) {
                 displayImages.push(...item.images);
