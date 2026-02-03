@@ -41,6 +41,11 @@
             opacity: 0.8;
             background-color: #000;
         }
+        
+        /* MOBİL DÜZELTMESİ: Dokunma çakışmalarını önler */
+        .cropper-container {
+            touch-action: none; 
+        }
     </style>
 </head>
 <body class="bg-gray-100 text-gray-900 transition-colors duration-300">
@@ -71,10 +76,11 @@
             ZoomIn: (props) => <Icon {...props} path={<><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></>} />,
             ZoomOut: (props) => <Icon {...props} path={<><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="8" y1="11" x2="14" y2="11"/></>} />,
             Image: (props) => <Icon {...props} path={<><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></>} />,
-            // Düzeltilmiş İkonlar:
             RotateCw: (props) => <Icon {...props} path={<><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8" /><path d="M21 3v5h-5" /></>} />,
             Check: (props) => <Icon {...props} path={<polyline points="20 6 9 17 4 12" />} />,
             RotateCcw: (props) => <Icon {...props} path={<><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0 6.74 2.74L3 8" /><path d="M3 3v5h5" /></>} />,
+            Download: (props) => <Icon {...props} path={<><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></>} />,
+            Upload: (props) => <Icon {...props} path={<><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></>} />,
         };
 
         const SUBJECTS = [
@@ -83,18 +89,23 @@
             "İcra ve İflas Hukuku", "İş Hukuku", "Vergi Hukuku", "Türk Hukuk Tarihi", "Genel Hukuk Bilgisi"
         ];
 
-        // GÖRSEL DÜZENLEYİCİ BİLEŞENİ (CropperJS Entegrasyonu)
+        // GÖRSEL DÜZENLEYİCİ BİLEŞENİ
         function ImageEditor({ src, onSave, onCancel }) {
             const imageRef = useRef(null);
             const cropperRef = useRef(null);
+            const [isReady, setIsReady] = useState(false);
 
-            useEffect(() => {
+            // MOBİL DÜZELTMESİ: onImageLoad ile başlatma
+            // Resim tamamen yüklenmeden Cropper'ı başlatmak mobilde sorun yaratabilir.
+            const handleImageLoad = () => {
                 const imageElement = imageRef.current;
                 if (imageElement && window.Cropper) {
+                    if (cropperRef.current) cropperRef.current.destroy();
+                    
                     const cropper = new window.Cropper(imageElement, {
-                        viewMode: 1, // Kırpma kutusunu resmin içinde tut
-                        dragMode: 'move', // Resmi sürükle
-                        autoCropArea: 0.9, // Başlangıçta neredeyse tüm resmi seç
+                        viewMode: 1, 
+                        dragMode: 'move', 
+                        autoCropArea: 0.9, 
                         restore: false,
                         guides: true,
                         center: true,
@@ -102,17 +113,23 @@
                         cropBoxMovable: true,
                         cropBoxResizable: true,
                         toggleDragModeOnDblclick: false,
-                        background: false, // Gri kareli arka planı kapat
+                        background: false,
+                        minContainerWidth: 300,
+                        minContainerHeight: 300,
                     });
                     cropperRef.current = cropper;
+                    setIsReady(true);
                 }
+            };
 
+            useEffect(() => {
+                // Temizlik
                 return () => {
                     if (cropperRef.current) {
                         cropperRef.current.destroy();
                     }
                 };
-            }, [src]);
+            }, []);
 
             const handleRotateRight = () => {
                 if (cropperRef.current) cropperRef.current.rotate(90);
@@ -128,7 +145,6 @@
 
             const handleSave = () => {
                 if (cropperRef.current) {
-                    // Kırpılan alanı al
                     const canvas = cropperRef.current.getCroppedCanvas({
                         maxWidth: 1200, 
                         maxHeight: 1200,
@@ -138,7 +154,6 @@
                     });
                     
                     if (canvas) {
-                        // JPEG olarak sıkıştır ve kaydet
                         const croppedImage = canvas.toDataURL('image/jpeg', 0.85);
                         onSave(croppedImage);
                     }
@@ -147,7 +162,6 @@
 
             return (
                 <div className="fixed inset-0 z-[60] bg-black flex flex-col animate-fade-in">
-                    {/* Üst Bar */}
                     <div className="flex justify-between items-center p-4 bg-black/80 text-white backdrop-blur-sm z-10 border-b border-white/10">
                         <button onClick={onCancel} className="text-sm font-medium hover:opacity-70 px-2 py-1">İptal</button>
                         <span className="font-bold">Fotoğrafı Düzenle</span>
@@ -156,12 +170,18 @@
                         </button>
                     </div>
 
-                    {/* Editör Alanı */}
                     <div className="flex-1 overflow-hidden bg-[#1a1a1a] relative flex items-center justify-center">
-                         <img ref={imageRef} src={src} alt="Edit" style={{ maxWidth: '100%', maxHeight: '100%', display: 'block' }} />
+                         {/* MOBİL DÜZELTMESİ: onLoad eklendi ve touch-action engellendi */}
+                         <img 
+                            ref={imageRef} 
+                            src={src} 
+                            alt="Edit" 
+                            onLoad={handleImageLoad}
+                            style={{ maxWidth: '100%', maxHeight: '100%', display: 'block', opacity: isReady ? 1 : 0 }} 
+                         />
+                         {!isReady && <div className="absolute text-white animate-pulse">Yükleniyor...</div>}
                     </div>
 
-                    {/* Alt Kontrol Barı */}
                     <div className="bg-black/80 p-6 flex justify-around items-center text-white pb-8 border-t border-white/10">
                         <button onClick={handleRotateLeft} className="flex flex-col items-center gap-2 opacity-80 hover:opacity-100 hover:text-indigo-400 transition-colors">
                             <div className="p-3 bg-white/10 rounded-full"><Icons.RotateCcw size={24} /></div>
@@ -244,8 +264,11 @@
             
             // Editör ve Viewer State'leri
             const [viewImage, setViewImage] = useState(null);
-            const [editingImage, setEditingImage] = useState(null); // Düzenlenen ham görsel
-            const [editingIndex, setEditingIndex] = useState(null); // Hangi slot (0 veya 1) düzenleniyor
+            const [editingImage, setEditingImage] = useState(null); 
+            const [editingIndex, setEditingIndex] = useState(null); 
+            
+            // Dosya Yükleme Referansı (Import için)
+            const fileInputRef = useRef(null);
 
             useEffect(() => {
                 const savedItems = localStorage.getItem('hmgs_items');
@@ -265,27 +288,23 @@
 
             const toggleDarkMode = () => setDarkMode(!darkMode);
 
-            // Dosya seçildiğinde Editörü Başlat
             const handleFileSelect = (e, index) => {
                 const file = e.target.files[0];
                 if (!file) return;
 
                 const reader = new FileReader();
                 reader.onload = (event) => {
-                    setEditingImage(event.target.result); // Ham veriyi editöre gönder
+                    setEditingImage(event.target.result); 
                     setEditingIndex(index);
-                    e.target.value = ''; // Input'u sıfırla ki aynı dosyayı tekrar seçebilsin
+                    e.target.value = ''; 
                 };
                 reader.readAsDataURL(file);
             };
 
-            // Editörden Kaydetme İşlemi
             const handleEditorSave = (croppedImage) => {
                 const newImages = [...inputImages];
                 newImages[editingIndex] = croppedImage;
                 setInputImages(newImages);
-                
-                // Editörü kapat
                 setEditingImage(null);
                 setEditingIndex(null);
             };
@@ -340,6 +359,45 @@
                 return items.filter(item => item.subject === subject && item.type === type);
             };
 
+            // --- YENİ ÖZELLİK: YEDEKLEME SİSTEMİ ---
+            const handleExport = () => {
+                const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(items));
+                const downloadAnchorNode = document.createElement('a');
+                downloadAnchorNode.setAttribute("href", dataStr);
+                downloadAnchorNode.setAttribute("download", "hmgs_yedek_" + new Date().toISOString().slice(0,10) + ".json");
+                document.body.appendChild(downloadAnchorNode);
+                downloadAnchorNode.click();
+                downloadAnchorNode.remove();
+            };
+
+            const handleImportClick = () => {
+                fileInputRef.current.click();
+            };
+
+            const handleImportFile = (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+                
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    try {
+                        const importedData = JSON.parse(event.target.result);
+                        if(Array.isArray(importedData)) {
+                             if(window.confirm(`Yedek dosyasında ${importedData.length} adet kayıt bulundu. Mevcut kayıtların üzerine eklensin mi?`)) {
+                                 setItems(prev => [...importedData, ...prev]);
+                                 alert("Yedekleme başarıyla yüklendi!");
+                             }
+                        } else {
+                            alert("Geçersiz yedek dosyası!");
+                        }
+                    } catch(err) {
+                        alert("Dosya okunamadı. Hata: " + err);
+                    }
+                    e.target.value = ''; // Reset input
+                };
+                reader.readAsText(file);
+            };
+
             if (loading) {
                 return (
                     <div className={`min-h-screen flex flex-col items-center justify-center p-6 ${darkMode ? 'bg-slate-900 text-white' : 'bg-gray-100 text-gray-900'}`}>
@@ -361,6 +419,15 @@
                         onCancel={handleEditorCancel} 
                     />
                 )}
+
+                {/* Gizli Dosya Input (Yükleme için) */}
+                <input 
+                    type="file" 
+                    ref={fileInputRef} 
+                    onChange={handleImportFile} 
+                    accept=".json" 
+                    style={{display: 'none'}} 
+                />
 
                 {/* Header */}
                 <div className={`p-4 shadow-md sticky top-0 z-40 flex justify-between items-center ${darkMode ? 'bg-slate-800' : 'bg-white'}`}>
@@ -398,6 +465,19 @@
                                 <span className="text-xs opacity-75">Soru</span>
                             </div>
                         </div>
+                        </div>
+
+                        {/* YEDEKLEME MENÜSÜ */}
+                        <div className={`p-4 rounded-xl border mb-4 flex gap-2 ${darkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'}`}>
+                             <button onClick={handleExport} className="flex-1 flex flex-col items-center gap-2 p-2 hover:bg-gray-500/10 rounded-lg transition-colors">
+                                <div className="p-2 bg-green-500/10 text-green-500 rounded-full"><Icons.Download size={20} /></div>
+                                <span className="text-xs font-bold">Yedeği İndir (PC)</span>
+                             </button>
+                             <div className="w-px bg-gray-500/20"></div>
+                             <button onClick={handleImportClick} className="flex-1 flex flex-col items-center gap-2 p-2 hover:bg-gray-500/10 rounded-lg transition-colors">
+                                <div className="p-2 bg-blue-500/10 text-blue-500 rounded-full"><Icons.Upload size={20} /></div>
+                                <span className="text-xs font-bold">Yedeği Yükle (Mobil)</span>
+                             </button>
                         </div>
 
                         <div className="grid grid-cols-2 gap-3">
