@@ -68,6 +68,8 @@
             Sun: (props) => <Icon {...props} path={<><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></>} />,
             ChevronDown: (props) => <Icon {...props} path={<path d="m6 9 6 6 6-6"/>} />,
             ChevronUp: (props) => <Icon {...props} path={<path d="m18 15-6-6-6 6"/>} />,
+            ChevronLeft: (props) => <Icon {...props} path={<path d="m15 18-6-6 6-6"/>} />,
+            ChevronRight: (props) => <Icon {...props} path={<path d="m9 18 6-6-6-6"/>} />,
             Save: (props) => <Icon {...props} path={<><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></>} />,
             Trash2: (props) => <Icon {...props} path={<><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></>} />,
             ArrowLeft: (props) => <Icon {...props} path={<><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></>} />,
@@ -96,7 +98,6 @@
             const [isReady, setIsReady] = useState(false);
 
             // MOBİL DÜZELTMESİ: onImageLoad ile başlatma
-            // Resim tamamen yüklenmeden Cropper'ı başlatmak mobilde sorun yaratabilir.
             const handleImageLoad = () => {
                 const imageElement = imageRef.current;
                 if (imageElement && window.Cropper) {
@@ -171,7 +172,6 @@
                     </div>
 
                     <div className="flex-1 overflow-hidden bg-[#1a1a1a] relative flex items-center justify-center">
-                         {/* MOBİL DÜZELTMESİ: onLoad eklendi ve touch-action engellendi */}
                          <img 
                             ref={imageRef} 
                             src={src} 
@@ -202,9 +202,14 @@
             );
         }
 
-        // TAM EKRAN GÖRSEL GÖRÜNTÜLEYİCİ
-        function ImageViewer({ src, onClose }) {
+        // TAM EKRAN GÖRSEL GÖRÜNTÜLEYİCİ (GÜNCELLENDİ: GALERİ VE SWIPE DESTEĞİ)
+        function ImageViewer({ images, initialIndex, onClose }) {
+            const [currentIndex, setCurrentIndex] = useState(initialIndex);
             const [scale, setScale] = useState(1);
+            
+            // Swipe için referanslar
+            const touchStartX = useRef(0);
+            const touchEndX = useRef(0);
             
             const handleZoomIn = (e) => {
                 e.stopPropagation();
@@ -216,11 +221,56 @@
                 setScale(prev => Math.max(prev - 0.5, 1));
             };
 
+            const handleNext = (e) => {
+                if(e) e.stopPropagation();
+                if (currentIndex < images.length - 1) {
+                    setCurrentIndex(currentIndex + 1);
+                    setScale(1); // Resmi değiştirence zoom'u sıfırla
+                }
+            };
+
+            const handlePrev = (e) => {
+                if(e) e.stopPropagation();
+                if (currentIndex > 0) {
+                    setCurrentIndex(currentIndex - 1);
+                    setScale(1);
+                }
+            };
+
+            // Swipe Mantığı
+            const handleTouchStart = (e) => {
+                touchStartX.current = e.changedTouches[0].screenX;
+            };
+
+            const handleTouchEnd = (e) => {
+                touchEndX.current = e.changedTouches[0].screenX;
+                handleSwipe();
+            };
+
+            const handleSwipe = () => {
+                // Zoom yapılmışsa swipe'ı engelle ki kullanıcı resim içinde gezinebilsin
+                if (scale > 1) return;
+
+                const diff = touchStartX.current - touchEndX.current;
+                const threshold = 50; // Kaydırma hassasiyeti
+
+                if (diff > threshold) {
+                    // Sola kaydırma -> Sonraki resim
+                    handleNext();
+                } else if (diff < -threshold) {
+                    // Sağa kaydırma -> Önceki resim
+                    handlePrev();
+                }
+            };
+
             return (
                 <div 
                     className="fixed inset-0 z-50 bg-black/95 flex flex-col items-center justify-center animate-fade-in"
                     onClick={onClose}
+                    onTouchStart={handleTouchStart}
+                    onTouchEnd={handleTouchEnd}
                 >
+                    {/* Üst Kontroller */}
                     <div className="absolute top-4 right-4 z-50 flex gap-4">
                         <button onClick={handleZoomOut} className="p-2 bg-white/10 rounded-full text-white hover:bg-white/20">
                             <Icons.ZoomOut size={24} />
@@ -233,16 +283,39 @@
                         </button>
                     </div>
 
+                    {/* Navigasyon Butonları (Masaüstü için) */}
+                    {currentIndex > 0 && (
+                        <button onClick={handlePrev} className="absolute left-4 top-1/2 -translate-y-1/2 p-3 bg-white/10 rounded-full text-white hover:bg-white/30 z-50">
+                            <Icons.ChevronLeft size={32} />
+                        </button>
+                    )}
+                    {currentIndex < images.length - 1 && (
+                        <button onClick={handleNext} className="absolute right-4 top-1/2 -translate-y-1/2 p-3 bg-white/10 rounded-full text-white hover:bg-white/30 z-50">
+                            <Icons.ChevronRight size={32} />
+                        </button>
+                    )}
+
+                    {/* Resim Alanı */}
                     <div 
-                        className="w-full h-full overflow-auto flex items-center justify-center p-2" 
+                        className="w-full h-full overflow-hidden flex items-center justify-center p-2" 
                         onClick={(e) => e.stopPropagation()}
                     >
                         <img 
-                            src={src} 
-                            alt="Full view" 
-                            className="zoom-image max-w-full max-h-full object-contain"
+                            src={images[currentIndex]} 
+                            alt={`Slide ${currentIndex}`} 
+                            className="zoom-image max-w-full max-h-full object-contain transition-transform duration-200"
                             style={{ transform: `scale(${scale})`, transformOrigin: 'center center' }}
                         />
+                    </div>
+
+                    {/* Alt Bilgi (Page Indicator) */}
+                    <div className="absolute bottom-6 left-0 right-0 flex justify-center gap-2">
+                        {images.map((_, idx) => (
+                            <div 
+                                key={idx} 
+                                className={`h-2 w-2 rounded-full transition-all ${idx === currentIndex ? 'bg-white w-4' : 'bg-white/30'}`}
+                            />
+                        ))}
                     </div>
                 </div>
             );
@@ -262,8 +335,8 @@
             const [inputText, setInputText] = useState('');
             const [inputAnswer, setInputAnswer] = useState(''); 
             
-            // Editör ve Viewer State'leri
-            const [viewImage, setViewImage] = useState(null);
+            // Editör ve Viewer State'leri (GÜNCELLENDİ)
+            const [viewerData, setViewerData] = useState(null); // { images: [], index: 0 }
             const [editingImage, setEditingImage] = useState(null); 
             const [editingIndex, setEditingIndex] = useState(null); 
             
@@ -301,24 +374,18 @@
                 reader.readAsDataURL(file);
             };
 
-            // Editörden Kaydetme İşlemi (Güncellendi)
             const handleEditorSave = (croppedImage) => {
                 const newImages = [...inputImages];
                 newImages[editingIndex] = croppedImage;
                 setInputImages(newImages);
                 
-                // AKILLI KIRPMA AKIŞI:
-                // Eğer kullanıcı 1. slotu (Soru) düzenliyorsa, aynı fotoğraftan cevap almak isteyip istemediğini sor.
                 if (editingIndex === 0) {
                     if (window.confirm("📸 Bu fotoğrafta cevap/çözüm de var mı?\n\n'Tamam' derseniz aynı fotoğraf üzerinden cevabı da kırpabilirsiniz.")) {
-                        setEditingIndex(1); // Hedefi cevap slotuna çevir
-                        // Not: editingImage (kaynak fotoğraf) değişmediği için editör kapanmaz, 
-                        // ama key={editingIndex} sayesinde editör yeniden başlar ve kullanıcı yeni bir seçim yapabilir.
+                        setEditingIndex(1); 
                         return; 
                     }
                 }
 
-                // İşlem bitti, editörü kapat
                 setEditingImage(null);
                 setEditingIndex(null);
             };
@@ -425,7 +492,13 @@
                 <div className={`min-h-screen transition-colors duration-300 ${darkMode ? 'bg-slate-900 text-slate-100' : 'bg-gray-50 text-gray-900'} font-sans pb-24`}>
                 
                 {/* Modallar */}
-                {viewImage && <ImageViewer src={viewImage} onClose={() => setViewImage(null)} />}
+                {viewerData && (
+                    <ImageViewer 
+                        images={viewerData.images} 
+                        initialIndex={viewerData.index}
+                        onClose={() => setViewerData(null)} 
+                    />
+                )}
                 {editingImage && (
                     <ImageEditor 
                         key={editingIndex} // ÖNEMLİ: Index değişince editörü sıfırla (Soru -> Cevap geçişi için)
@@ -551,7 +624,7 @@
                                 item={item} 
                                 darkMode={darkMode} 
                                 onDelete={handleDelete} 
-                                onViewImage={(src) => setViewImage(src)}
+                                onViewImage={(images, index) => setViewerData({ images, index })}
                             />
                             ))
                         )}
@@ -735,7 +808,7 @@
                                     src={imgSrc} 
                                     alt={`Visual ${idx}`} 
                                     className="rounded-lg h-40 w-full object-cover shadow-sm cursor-pointer hover:opacity-90 transition-opacity"
-                                    onClick={() => onViewImage(imgSrc)}
+                                    onClick={() => onViewImage(displayImages, idx)}
                                 />
                                 <div className="absolute top-2 right-2 bg-black/60 p-1 rounded-full text-white pointer-events-none">
                                     <Icons.ZoomIn size={14} />
