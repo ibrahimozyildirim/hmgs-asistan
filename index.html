@@ -78,7 +78,7 @@
             "İcra ve İflas Hukuku", "İş Hukuku", "Vergi Hukuku", "Türk Hukuk Tarihi", "Genel Hukuk Bilgisi"
         ];
 
-        // --- GÖRSEL DÜZENLEYİCİ ---
+        // --- GÖRSEL DÜZENLEYİCİ (Güvenli Sıkıştırma) ---
         function ImageEditor({ src, onSave, onCancel, title }) {
             const imageRef = useRef(null);
             const cropperRef = useRef(null);
@@ -109,17 +109,20 @@
             
             const handleSave = () => {
                 if (cropperRef.current) {
-                    let quality = 0.9;
-                    let width = 2560; 
+                    // Maksimum boyutları ve kaliteyi Firestore limitine (1MB) göre ayarla
+                    // Her bir resim için hedef ~450KB olmalı (Base64 string ~600k karakter)
+                    
+                    let quality = 0.8;
+                    let width = 1600; // Başlangıç genişliği makul tutuldu
+                    
                     let canvas = cropperRef.current.getCroppedCanvas({ maxWidth: width, maxHeight: width, fillColor: '#fff' });
                     let dataUrl = canvas.toDataURL('image/jpeg', quality);
 
-                    while (dataUrl.length > 800000 && quality > 0.6) {
-                        quality -= 0.1;
-                        dataUrl = canvas.toDataURL('image/jpeg', quality);
-                    }
-                    while (dataUrl.length > 800000 && width > 1200) {
-                        width -= 400;
+                    // Sıkıştırma Döngüsü: 450KB (yaklaşık 600.000 karakter) altına inene kadar küçült
+                    while (dataUrl.length > 600000 && (quality > 0.5 || width > 800)) {
+                        if (quality > 0.5) quality -= 0.1;
+                        else if (width > 800) width -= 200;
+                        
                         canvas = cropperRef.current.getCroppedCanvas({ maxWidth: width, maxHeight: width, fillColor: '#fff' });
                         dataUrl = canvas.toDataURL('image/jpeg', quality);
                     }
@@ -147,7 +150,7 @@
             );
         }
 
-        // --- GALERİ GÖRÜNTÜLEYİCİ ---
+        // --- RESİM GÖRÜNTÜLEYİCİ ---
         function ImageViewer({ images, initialIndex, onClose }) {
             const [currentIndex, setCurrentIndex] = useState(initialIndex);
             const [scale, setScale] = useState(1);
@@ -271,6 +274,18 @@
             const handleSave = async () => {
                 if (!selectedSubject) { alert("Ders seçin."); return; }
                 if (!inputText && !inputImages[0] && !inputImages[1]) { alert("İçerik giriniz."); return; }
+                
+                // Güvenlik Kontrolü: Toplam Boyut Hesaplama
+                const size1 = inputImages[0] ? inputImages[0].length : 0;
+                const size2 = inputImages[1] ? inputImages[1].length : 0;
+                const totalSize = size1 + size2;
+                
+                // 1 MB = 1048576 bytes. Base64 olduğu için ~1.3M karakter limit. Biz 1.0M'da uyaralım.
+                if (totalSize > 1040000) {
+                    alert("⚠️ HATA: Dosyalar çok büyük!\n\nVeritabanı en fazla 1MB kabul ediyor. Şu anki boyut: " + Math.round(totalSize/1024) + " KB.\n\nLütfen fotoğrafları tekrar seçip kırpın, sistem otomatik küçültecektir.");
+                    return;
+                }
+
                 setLoading(true); setProcessingText('Kaydediliyor...');
                 
                 const newItem = { subject: selectedSubject, type: selectedType, text: inputText, answer: inputAnswer, images: inputImages.filter(img => img !== null), date: new Date().toLocaleDateString('tr-TR') };
